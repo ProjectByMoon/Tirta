@@ -1,0 +1,38 @@
+{
+  "name": "moonxproject-enterprise",
+  "private": true,
+  "version": "57.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "audit": "node scripts/audit.mjs",
+    "audit:i18n": "node scripts/audit-translations.mjs",
+    "audit:theme": "node scripts/audit-theme.mjs",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios",
+    "audit:pwa": "node scripts/audit-pwa.mjs",
+    "audit:professional": "node scripts/audit-professional-release.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2"
+  }
+}
