@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Project by Tirta</string>
+    <string name="title_activity_main">Project by Tirta</string>
+    <string name="package_name">com.projectbytira.bernadya</string>
+    <string name="custom_url_scheme">com.projectbytira.bernadya</string>
+</resources>

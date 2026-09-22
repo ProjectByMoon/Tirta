@@ -5,7 +5,7 @@ import '../../../styles/employee/portal.css';
 import moonLogo from '../../../assets/moon-logo.svg';
 
 type Employee={id:string;id_karyawan:string;nama:string;email:string;jabatan?:string|null;departemen?:string|null;status_karyawan?:string|null;status_aktif?:boolean|null;tanggal_masuk?:string|null};
-type Tab='home'|'attendance'|'leave'|'overtime'|'schedule'|'payslip'|'profile';
+type Tab='home'|'attendance'|'leave'|'overtime'|'schedule'|'payslip'|'feedback'|'profile';
 type Geo={lat:number;lng:number;accuracy:number};
 const money=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
 const jakartaNow=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
@@ -21,6 +21,9 @@ export default function PortalKaryawan({onLogout}:{onLogout?:()=>void}){
  const [leaveForm,setLeaveForm]=useState({jenis:'Tahunan',tanggal_mulai:today(),tanggal_selesai:today(),alasan:''});
  const [profileForm,setProfileForm]=useState({field_name:'no_telp',new_value:'',reason:''});
  const [otForm,setOtForm]=useState({tanggal:today(),menit:'60',alasan:''});
+ const [feedbackForm,setFeedbackForm]=useState({kategori:'Saran',judul:'',isi:''});
+ const [feedbacks,setFeedbacks]=useState<any[]>([]);
+ const [feedbackBusy,setFeedbackBusy]=useState(false);
  const [detailPayroll,setDetailPayroll]=useState<string|null>(null);
 
  const getGeo=()=>{setGeoLoading(true);setError('');if(!navigator.geolocation){setGeoLoading(false);setError('Browser tidak mendukung GPS.');return}navigator.geolocation.getCurrentPosition(p=>{if(!Number.isFinite(p.coords.accuracy)||p.coords.accuracy>100){setGeo(null);setGeoLoading(false);setError(`Akurasi GPS terlalu rendah (±${Math.round(p.coords.accuracy||999)} m). Coba di area terbuka dan ulangi.`);return}setGeo({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy});setGeoLoading(false)},e=>{setGeoLoading(false);setError(e.message||'Lokasi tidak dapat diperoleh. Aktifkan izin lokasi.')},{enableHighAccuracy:true,timeout:12000,maximumAge:30000})};
@@ -177,6 +180,8 @@ export default function PortalKaryawan({onLogout}:{onLogout?:()=>void}){
    supabase.from('hris_employee_overtime_requests').select('*').eq('id_karyawan',e.id_karyawan).order('tanggal',{ascending:false}).limit(30)
   ]);
   setAttendance(a.data||[]);setLeaves(l.data||[]);setBalances(b.data||[]);setPayroll(p.data||[]);setSchedule(j.data||[]);setNotifications(n.data||[]);setOtRequests(o.data||[]);
+ const {data:fb,error:fbError}=await supabase.from('hris_employee_feedback').select('id,kategori,judul,isi,status,tanggapan_hr,created_at,updated_at').eq('id_karyawan',e.id_karyawan).order('created_at',{ascending:false}).limit(30);
+ if(!fbError)setFeedbacks(fb||[]);
   const ids=(p.data||[]).map(x=>x.id);if(ids.length){const {data:pl}=await supabase.from('hris_payroll_lines').select('*').in('payroll_id',ids);const grouped:any={};(pl||[]).forEach(x=>(grouped[x.payroll_id]??=[]).push(x));setLines(grouped)}else setLines({});setLoading(false)
  };
  useEffect(()=>{load()},[]);
@@ -187,11 +192,33 @@ export default function PortalKaryawan({onLogout}:{onLogout?:()=>void}){
  const todayAtt=attendance.find(a=>a.tanggal===today());
  const submitLeave=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const start=new Date(`${leaveForm.tanggal_mulai}T00:00:00`),end=new Date(`${leaveForm.tanggal_selesai}T00:00:00`);if(end<start){setError('Tanggal selesai harus setelah tanggal mulai.');return}const days=Math.floor((end.getTime()-start.getTime())/86400000)+1;const {error:e1}=await supabase.from('hris_employee_leave_requests').insert({...leaveForm,id_karyawan:employee.id_karyawan,jumlah_hari:days});if(e1)setError(e1.message);else{setNotice('Pengajuan cuti berhasil dikirim ke HR.');setLeaveForm({...leaveForm,tanggal_mulai:today(),tanggal_selesai:today(),alasan:''});await load()}};
  const submitOt=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_overtime_requests').insert({id_karyawan:employee.id_karyawan,tanggal:otForm.tanggal,menit:Number(otForm.menit),alasan:otForm.alasan});if(e1)setError(e1.message);else{setNotice('Pengajuan lembur berhasil dikirim.');setOtForm({...otForm,menit:'60',alasan:''});await load()}};
- const submitProfile=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_profile_requests').insert({...profileForm,id_karyawan:employee.id_karyawan,old_value:profileForm.field_name==='email'?employee.email||'':''});if(e1)setError(e1.message);else{setNotice('Permintaan perubahan profil berhasil dikirim.');setProfileForm({...profileForm,new_value:'',reason:''})}};
+ const submitProfile=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_profile_requests').insert({...profileForm,id_karyawan:employee.id_karyawan,old_value:profileForm.field_name==='email'?employee.email||'':''});if(e1)setError(e1.message);else{setNotice('Permintaan perubahan profil berhasil dikirim.');setProfileForm({...profileForm,new_value:'',reason:''})}}; const submitFeedback=async(e:React.FormEvent)=>{
+ e.preventDefault();
+ if(!employee||feedbackBusy)return;
+ setFeedbackBusy(true);
+ setError('');
+ setNotice('');
+ const payload={
+   id_karyawan:employee.id_karyawan,
+   kategori:feedbackForm.kategori,
+   judul:feedbackForm.judul.trim(),
+   isi:feedbackForm.isi.trim()
+ };
+ const {data,error:e1}=await supabase
+   .from('hris_employee_feedback')
+   .insert(payload)
+   .select('id,kategori,judul,isi,status,tanggapan_hr,created_at,updated_at')
+   .single();
+ setFeedbackBusy(false);
+ if(e1){setError(e1.message);return}
+ if(data)setFeedbacks(x=>[data,...x]);
+ setFeedbackForm({kategori:'Saran',judul:'',isi:''});
+ setNotice('Saran berhasil dikirim ke HR. Terima kasih atas masukannya.');
+};
  const markRead=async(id:string)=>{await supabase.from('hris_employee_notifications').update({is_read:true}).eq('id',id);setNotifications(x=>x.map(n=>n.id===id?{...n,is_read:true}:n))};
  const printPayslip=(id:string)=>{setDetailPayroll(id);setTimeout(()=>window.print(),150)};
  const stats=useMemo(()=>({hadir:attendance.filter(a=>['Hadir','Tepat Waktu','Terlambat'].includes(a.status||'')).length,cuti:leaves.filter(x=>x.status==='Disetujui').reduce((s,x)=>s+Number(x.jumlah_hari||0),0),latest:payroll[0],unread:notifications.filter(n=>!n.is_read).length}),[attendance,leaves,payroll,notifications]);
- const tabs:[Tab,string][]=[['home','Ringkasan'],['attendance','Absensi'],['leave','Cuti'],['overtime','Lembur'],['schedule','Jadwal'],['payslip','Slip Gaji'],['profile','Profil']];
+ const tabs:[Tab,string][]=[['home','Ringkasan'],['attendance','Absensi'],['leave','Cuti'],['overtime','Lembur'],['schedule','Jadwal'],['payslip','Slip Gaji'],['feedback','Kotak Saran'],['profile','Profil']];
  if(loading&&!employee&&!user)return <PortalLoadingScreen/>;
  if(!employee)return <div className="employee-login"><div className="employee-login-card"><div className="employee-logo">M</div><div className="login-copy"><span className="portal-eyebrow">TAUTAN AKUN</span><h2>Data karyawan belum terhubung</h2><p>Hubungi HR/Admin untuk menghubungkan akun Supabase Anda dengan data karyawan.</p></div><button className="portal-secondary" onClick={logout}>Keluar</button></div></div>;
  if(employee.status_aktif===false)return <div className="employee-login"><div className="employee-login-card"><div className="employee-logo">M</div><div className="login-copy"><span className="portal-eyebrow">STATUS AKUN</span><h2>Menunggu Verifikasi</h2><p>Data Anda sedang diperiksa oleh HR/Admin.</p></div><button className="portal-secondary" onClick={logout}>Keluar</button></div></div>;
@@ -208,7 +235,27 @@ export default function PortalKaryawan({onLogout}:{onLogout?:()=>void}){
  {tab==='overtime'&&<section className="portal-grid"><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PENGAJUAN LEMBUR</span><h2>Ajukan Lembur</h2></div></div><form className="employee-form" onSubmit={submitOt}><label>Tanggal<input type="date" value={otForm.tanggal} onChange={e=>setOtForm({...otForm,tanggal:e.target.value})}/></label><label>Durasi (menit)<input type="number" min="1" max="1440" value={otForm.menit} onChange={e=>setOtForm({...otForm,menit:e.target.value})} required/></label><label>{t('reason')}<textarea value={otForm.alasan} onChange={e=>setOtForm({...otForm,alasan:e.target.value})} required/></label><button className="portal-primary">Kirim Pengajuan</button></form></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">RIWAYAT</span><h2>Status Lembur</h2></div></div><div className="request-list">{otRequests.map(x=><div key={x.id}><div><b>{dateLabel(x.tanggal)}</b><small>{x.menit} menit · {x.alasan}</small></div><span className="status-badge">{x.status}</span></div>)}{!otRequests.length&&<p className="muted">Belum ada pengajuan lembur.</p>}</div></div></section>}
  {tab==='schedule'&&<section className="portal-card table-card"><div className="card-title"><div><span className="card-kicker">KALENDER KERJA</span><h2>Jadwal Kerja Mendatang</h2></div></div><div className="schedule-grid">{schedule.map(s=><div className="schedule-item" key={s.id}><small>{dateLabel(s.tanggal)}</small><b>{s.hris_shift?.nama||'Shift belum ditentukan'}</b><span>{s.hris_shift?.jam_masuk||'--:--'} — {s.hris_shift?.jam_pulang||'--:--'}</span><em>{s.status}</em></div>)}{!schedule.length&&<div className="empty-state"><h2>Belum ada jadwal</h2><p>Jadwal kerja Anda belum dipublikasikan.</p></div>}</div></section>}
  {tab==='payslip'&&<section className="payslip-grid">{payroll.map(p=><div className="portal-card payslip-card" key={p.id}><div className="card-title"><div><span className="card-kicker">SLIP GAJI</span><h2>Periode {p.periode}</h2></div><span className="status-badge">{p.status}</span></div><div className="salary-value">{money(Number(p.gaji_bersih||0))}</div><p>Gaji Bersih</p><div className="salary-lines">{(lines[p.id]||[]).map(x=><div key={x.id}><span>{x.nama}</span><b>{money(Number(x.amount||0))}</b></div>)}</div><button className="portal-secondary full" onClick={()=>printPayslip(p.id)}>Cetak / Simpan PDF</button></div>)}{!payroll.length&&<div className="portal-card empty-state"><div className="empty-icon">P</div><h2>Belum ada slip gaji</h2><p>Slip muncul setelah payroll diproses dan dipublish oleh HR.</p></div>}{detailPayroll&&<div className="print-slip" id="print-slip">{(()=>{const p=payroll.find(x=>x.id===detailPayroll);return p?<><div className="print-head"><b>Project by Tirta</b><span>SLIP GAJI KARYAWAN</span></div><h2>Slip Gaji · {p.periode}</h2><p>{employee.nama} · {employee.id_karyawan}</p><hr/><div className="print-lines">{(lines[p.id]||[]).map(x=><div key={x.id}><span>{x.nama}</span><b>{money(Number(x.amount||0))}</b></div>)}<div className="total"><span>Gaji Bersih</span><b>{money(Number(p.gaji_bersih||0))}</b></div></div></>:null})()}</div>}</section>}
- {tab==='profile'&&<section className="portal-grid"><div className="portal-card info-card"><div className="portal-profile"><div className="portal-avatar">{employee.nama.charAt(0).toUpperCase()}</div><div><h3>{employee.nama}</h3><p>{employee.jabatan||t('employee')} · {employee.departemen||'-'}</p></div></div><div className="info-list"><div><small>Email</small><b>{employee.email||'-'}</b></div><div><small>ID Karyawan</small><b>{employee.id_karyawan}</b></div><div><small>Status</small><b>{employee.status_karyawan||t('active')}</b></div></div></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PERUBAHAN DATA</span><h2>{t('request_data_change')}</h2></div></div><form className="employee-form" onSubmit={submitProfile}><label>{t('data_to_change')}<select value={profileForm.field_name} onChange={e=>setProfileForm({...profileForm,field_name:e.target.value})}><option value="no_telp">{t('phone_number')}</option><option value="alamat_rumah">{t('home_address')}</option><option value="email">Email</option></select></label><label>{t('new_value')}<input value={profileForm.new_value} onChange={e=>setProfileForm({...profileForm,new_value:e.target.value})} required/></label><label>{t('reason')}<textarea value={profileForm.reason} onChange={e=>setProfileForm({...profileForm,reason:e.target.value})}/></label><button className="portal-primary">{t('send_request')}</button></form></div></section>}
+ {tab==='feedback'&&<section className="portal-grid">
+<div className="portal-card info-card">
+<div className="card-title"><div><span className="card-kicker">KOTAK SARAN</span><h2>Sampaikan Masukan</h2></div></div>
+<p className="muted">Sampaikan saran, keluhan, atau masukan kepada HR. Masukan Anda akan diproses oleh tim terkait.</p>
+<form className="employee-form" onSubmit={submitFeedback}>
+<label>Kategori<select value={feedbackForm.kategori} onChange={e=>setFeedbackForm({...feedbackForm,kategori:e.target.value})}>
+<option>Saran</option><option>Keluhan</option><option>Masukan</option>
+</select></label>
+<label>Judul<input value={feedbackForm.judul} onChange={e=>setFeedbackForm({...feedbackForm,judul:e.target.value})} minLength={3} maxLength={150} required placeholder="Contoh: Usulan perbaikan ruang istirahat"/></label>
+<label>Isi Masukan<textarea value={feedbackForm.isi} onChange={e=>setFeedbackForm({...feedbackForm,isi:e.target.value})} minLength={5} maxLength={5000} required placeholder="Tuliskan saran, keluhan, atau masukan Anda..."/></label>
+<button className="portal-primary" disabled={feedbackBusy}>{feedbackBusy?'Mengirim...':'Kirim Saran'}</button>
+</form>
+</div>
+<div className="portal-card info-card">
+<div className="card-title"><div><span className="card-kicker">RIWAYAT MASUKAN</span><h2>Masukan Saya</h2></div></div>
+<div className="request-list">
+{feedbacks.map(x=><div key={x.id}><div><b>{x.judul}</b><small>{x.kategori} · {new Date(x.created_at).toLocaleDateString('id-ID')}</small>{x.tanggapan_hr&&<small><strong>Tanggapan HR:</strong> {x.tanggapan_hr}</small>}</div><span className="status-badge">{x.status}</span></div>)}
+{!feedbacks.length&&<p className="muted">Belum ada saran atau masukan yang dikirim.</p>}
+</div>
+</div>
+</section>}{tab==='profile'&&<section className="portal-grid"><div className="portal-card info-card"><div className="portal-profile"><div className="portal-avatar">{employee.nama.charAt(0).toUpperCase()}</div><div><h3>{employee.nama}</h3><p>{employee.jabatan||t('employee')} · {employee.departemen||'-'}</p></div></div><div className="info-list"><div><small>Email</small><b>{employee.email||'-'}</b></div><div><small>ID Karyawan</small><b>{employee.id_karyawan}</b></div><div><small>Status</small><b>{employee.status_karyawan||t('active')}</b></div></div></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PERUBAHAN DATA</span><h2>{t('request_data_change')}</h2></div></div><form className="employee-form" onSubmit={submitProfile}><label>{t('data_to_change')}<select value={profileForm.field_name} onChange={e=>setProfileForm({...profileForm,field_name:e.target.value})}><option value="no_telp">{t('phone_number')}</option><option value="alamat_rumah">{t('home_address')}</option><option value="email">Email</option></select></label><label>{t('new_value')}<input value={profileForm.new_value} onChange={e=>setProfileForm({...profileForm,new_value:e.target.value})} required/></label><label>{t('reason')}<textarea value={profileForm.reason} onChange={e=>setProfileForm({...profileForm,reason:e.target.value})}/></label><button className="portal-primary">{t('send_request')}</button></form></div></section>}
  </main></div>;
 }
 
