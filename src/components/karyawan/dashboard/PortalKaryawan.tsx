@@ -1,0 +1,246 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from '../../../locales/LanguageContext';
+import { supabase } from '../../../lib/supabase/client';
+import '../../../styles/employee/portal.css';
+import moonLogo from '../../../assets/moon-logo.svg';
+import SuggestionBox from '../../../features/employee-feedback/SuggestionBox';
+import type { SuggestionDraft } from '../../../features/employee-feedback/types';
+
+type Employee={id:string;id_karyawan:string;nama:string;email:string;jabatan?:string|null;departemen?:string|null;status_karyawan?:string|null;status_aktif?:boolean|null;tanggal_masuk?:string|null};
+type Tab='home'|'attendance'|'leave'|'overtime'|'schedule'|'payslip'|'feedback'|'profile';
+type Geo={lat:number;lng:number;accuracy:number};
+const money=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+const jakartaNow=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+const today=()=>{const p=Object.fromEntries(jakartaNow().map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`};
+const dateLabel=(v:string)=>v?new Intl.DateTimeFormat('id-ID',{dateStyle:'medium'}).format(new Date(`${v}T00:00:00`)):'-';
+
+export default function PortalKaryawan({onLogout}:{onLogout?:()=>void}){
+  const { t } = useTranslation();
+ const [user,setUser]=useState<any>(null),[employee,setEmployee]=useState<Employee|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[tab,setTab]=useState<Tab>('home');
+ const [attendance,setAttendance]=useState<any[]>([]),[leaves,setLeaves]=useState<any[]>([]),[balances,setBalances]=useState<any[]>([]),[payroll,setPayroll]=useState<any[]>([]),[lines,setLines]=useState<Record<string,any[]>>({}),[schedule,setSchedule]=useState<any[]>([]),[notifications,setNotifications]=useState<any[]>([]),[otRequests,setOtRequests]=useState<any[]>([]);
+ const [geo,setGeo]=useState<Geo|null>(null),[geoLoading,setGeoLoading]=useState(false),[cameraOn,setCameraOn]=useState(false),[cameraReady,setCameraReady]=useState(false),[cameraError,setCameraError]=useState(''),[selfie,setSelfie]=useState(''),[clockBusy,setClockBusy]=useState(false);
+ const videoRef=useRef<HTMLVideoElement>(null),streamRef=useRef<MediaStream|null>(null);
+ const [leaveForm,setLeaveForm]=useState({jenis:'Tahunan',tanggal_mulai:today(),tanggal_selesai:today(),alasan:''});
+ const [profileForm,setProfileForm]=useState({field_name:'no_telp',new_value:'',reason:''});
+ const [otForm,setOtForm]=useState({tanggal:today(),menit:'60',alasan:''});
+ const [feedbacks,setFeedbacks]=useState<any[]>([]);
+ const [detailPayroll,setDetailPayroll]=useState<string|null>(null);
+
+ const getGeo=()=>{setGeoLoading(true);setError('');if(!navigator.geolocation){setGeoLoading(false);setError('Browser tidak mendukung GPS.');return}navigator.geolocation.getCurrentPosition(p=>{if(!Number.isFinite(p.coords.accuracy)||p.coords.accuracy>100){setGeo(null);setGeoLoading(false);setError(`Akurasi GPS terlalu rendah (±${Math.round(p.coords.accuracy||999)} m). Coba di area terbuka dan ulangi.`);return}setGeo({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy});setGeoLoading(false)},e=>{setGeoLoading(false);setError(e.message||'Lokasi tidak dapat diperoleh. Aktifkan izin lokasi.')},{enableHighAccuracy:true,timeout:12000,maximumAge:30000})};
+ const stopCamera=(resetState=true)=>{
+  const stream=streamRef.current;
+  streamRef.current=null;
+  if(stream){stream.getTracks().forEach(track=>{try{track.stop()}catch{}})}
+  const video=videoRef.current;
+  if(video){
+   video.pause();
+   video.srcObject=null;
+   video.removeAttribute('src');
+  }
+  setCameraReady(false);
+  if(resetState)setCameraOn(false);
+ };
+
+ const startCamera=async()=>{
+  setCameraError('');
+  setError('');
+  setCameraReady(false);
+
+  const isLocalhost=typeof window!=='undefined' && ['localhost','127.0.0.1','[::1]'].includes(window.location.hostname);
+  if(typeof window==='undefined'||(!window.isSecureContext&&!isLocalhost)){
+   setCameraError('Kamera membutuhkan koneksi HTTPS. Jika aplikasi sudah online, buka alamat portal yang diawali https://.');
+   return;
+  }
+  if(!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia!=='function'){
+   setCameraError('Browser ini tidak mendukung akses kamera. Gunakan Chrome, Edge, atau Safari versi terbaru.');
+   return;
+  }
+
+  stopCamera(false);
+
+  try{
+   let stream:MediaStream;
+   try{
+    stream=await navigator.mediaDevices.getUserMedia({
+     audio:false,
+     video:{
+      facingMode:{ideal:'user'},
+      width:{ideal:720,min:320},
+      height:{ideal:720,min:240}
+     }
+    });
+   }catch(firstError:any){
+    // Fallback untuk webcam/driver yang tidak menerima constraint tertentu.
+    if(['OverconstrainedError','NotFoundError'].includes(firstError?.name||'')){
+     stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});
+    }else throw firstError;
+   }
+
+   streamRef.current=stream;
+   setCameraOn(true);
+  }catch(e:any){
+   const name=e?.name||'';
+   const message=name==='NotAllowedError'||name==='PermissionDeniedError'
+    ?'Izin kamera ditolak. Izinkan kamera untuk situs ini melalui ikon kamera di address bar, lalu klik Buka Kamera lagi.'
+    :name==='NotFoundError'
+    ?'Kamera tidak ditemukan. Pastikan kamera perangkat tersedia dan tidak sedang dinonaktifkan.'
+    :name==='NotReadableError'||name==='TrackStartError'
+    ?'Kamera sedang dipakai aplikasi lain. Tutup Zoom, Meet, Teams, WhatsApp, atau aplikasi kamera lain lalu coba lagi.'
+    :name==='SecurityError'
+    ?'Browser memblokir akses kamera. Pastikan portal dibuka melalui HTTPS.'
+    :e?.message||'Kamera tidak dapat dibuka. Periksa izin kamera browser lalu coba lagi.';
+   setCameraError(message);
+   setCameraOn(false);
+   setCameraReady(false);
+  }
+ };
+
+ useEffect(()=>{
+  if(!cameraOn)return;
+  const video=videoRef.current;
+  const stream=streamRef.current;
+  if(!video||!stream)return;
+
+  let cancelled=false;
+  const markReady=()=>{
+   if(!cancelled && video.videoWidth>1 && video.videoHeight>1)setCameraReady(true);
+  };
+
+  video.muted=true;
+  video.playsInline=true;
+  video.autoplay=true;
+  video.srcObject=stream;
+  video.addEventListener('loadedmetadata',markReady);
+  video.addEventListener('canplay',markReady);
+  video.addEventListener('playing',markReady);
+
+  const startPlayback=async()=>{
+   try{
+    await video.play();
+    markReady();
+   }catch{
+    setCameraError('Pratinjau kamera tidak dapat diputar. Klik Buka Kamera lagi setelah memastikan izin kamera sudah diizinkan.');
+   }
+  };
+  void startPlayback();
+
+  return()=>{
+   cancelled=true;
+   video.removeEventListener('loadedmetadata',markReady);
+   video.removeEventListener('canplay',markReady);
+   video.removeEventListener('playing',markReady);
+  };
+ },[cameraOn]);
+
+ const takeSelfie=()=>{
+  const video=videoRef.current;
+  if(!video||!streamRef.current){
+   setCameraError('Kamera belum aktif. Klik Buka Kamera terlebih dahulu.');
+   return;
+  }
+  if(video.readyState<2||video.videoWidth<2||video.videoHeight<2){
+   setCameraError('Pratinjau kamera belum siap. Tunggu sampai wajah terlihat di layar, lalu tekan Ambil Selfie.');
+   return;
+  }
+
+  const sourceWidth=video.videoWidth;
+  const sourceHeight=video.videoHeight;
+  const side=Math.min(sourceWidth,sourceHeight);
+  const sx=Math.floor((sourceWidth-side)/2);
+  const sy=Math.floor((sourceHeight-side)/2);
+  const canvas=document.createElement('canvas');
+  canvas.width=720;
+  canvas.height=720;
+  const ctx=canvas.getContext('2d');
+  if(!ctx){setCameraError('Perangkat tidak dapat membuat foto selfie.');return;}
+
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(video,sx,sy,side,side,0,0,720,720);
+  const image=canvas.toDataURL('image/jpeg',0.88);
+  if(!image||image.length<100){
+   setCameraError('Foto selfie gagal dibuat. Coba ulangi.');
+   return;
+  }
+  setSelfie(image);
+  setCameraError('');
+  stopCamera();
+ };
+
+ useEffect(()=>()=>stopCamera(),[]);
+
+ const load=async()=>{setLoading(true);setError('');const {data:{user:u}}=await supabase.auth.getUser();setUser(u);if(!u){setLoading(false);return}const {data:e,error:ee}=await supabase.from('karyawan').select('id,id_karyawan,nama,email,jabatan,departemen,status_karyawan,status_aktif,tanggal_masuk').eq('auth_user_id',u.id).maybeSingle();if(ee){setError(ee.message);setLoading(false);return}if(!e){setLoading(false);return}setEmployee(e);
+  const [a,l,b,p,j,n,o]=await Promise.all([
+   supabase.from('absensi').select('*').eq('id_karyawan',e.id_karyawan).order('tanggal',{ascending:false}).limit(90),
+   supabase.from('hris_cuti').select('*').eq('id_karyawan',e.id_karyawan).order('created_at',{ascending:false}).limit(40),
+   supabase.from('hris_saldo_cuti').select('*').eq('id_karyawan',e.id_karyawan).order('tahun',{ascending:false}),
+   supabase.from('hris_payroll').select('*').eq('id_karyawan',e.id_karyawan).order('periode',{ascending:false}).limit(12),
+   supabase.from('hris_jadwal').select('*,hris_shift(*)').eq('id_karyawan',e.id_karyawan).gte('tanggal',today()).order('tanggal').limit(45),
+   supabase.from('hris_employee_notifications').select('*').eq('id_karyawan',e.id_karyawan).order('created_at',{ascending:false}).limit(30),
+   supabase.from('hris_employee_overtime_requests').select('*').eq('id_karyawan',e.id_karyawan).order('tanggal',{ascending:false}).limit(30)
+  ]);
+  setAttendance(a.data||[]);setLeaves(l.data||[]);setBalances(b.data||[]);setPayroll(p.data||[]);setSchedule(j.data||[]);setNotifications(n.data||[]);setOtRequests(o.data||[]);
+ const {data:fb,error:fbError}=await supabase.from('hris_employee_feedback').select('id,kategori,judul,isi,status,tanggapan_hr,created_at,updated_at').eq('id_karyawan',e.id_karyawan).order('created_at',{ascending:false}).limit(30);
+ if(!fbError)setFeedbacks(fb||[]);
+  const ids=(p.data||[]).map(x=>x.id);if(ids.length){const {data:pl}=await supabase.from('hris_payroll_lines').select('*').in('payroll_id',ids);const grouped:any={};(pl||[]).forEach(x=>(grouped[x.payroll_id]??=[]).push(x));setLines(grouped)}else setLines({});setLoading(false)
+ };
+ useEffect(()=>{load()},[]);
+ const logout=async()=>{stopCamera();await supabase.auth.signOut();setEmployee(null);setUser(null);onLogout?.()};
+ const requireSecurity=()=>{if(!geo){setError('Ambil lokasi GPS terlebih dahulu.');getGeo();return false}if(!selfie){setError('Ambil selfie terlebih dahulu.');return false}return true};
+ const clockIn=async()=>{if(!employee||!requireSecurity())return;setClockBusy(true);const {error:e1}=await supabase.rpc('hris_ess_clock_in',{p_id_karyawan:employee.id_karyawan,p_tanggal:today(),p_jam:null,p_lat:geo?.lat,p_long:geo?.lng,p_accuracy:geo?.accuracy,p_selfie:selfie,p_lokasi:'GPS ESS'});setClockBusy(false);if(e1)setError(e1.message);else{setNotice('Masuk berhasil. Absensi tersimpan dengan GPS dan selfie.');setSelfie('');setGeo(null);await load()}};
+ const clockOut=async()=>{if(!employee||!requireSecurity())return;setClockBusy(true);const {error:e1}=await supabase.rpc('hris_ess_clock_out',{p_id_karyawan:employee.id_karyawan,p_tanggal:today(),p_jam:null,p_lat:geo?.lat,p_long:geo?.lng,p_accuracy:geo?.accuracy,p_selfie:selfie,p_lokasi:'GPS ESS'});setClockBusy(false);if(e1)setError(e1.message);else{setNotice('Pulang berhasil.');setSelfie('');setGeo(null);await load()}};
+ const todayAtt=attendance.find(a=>a.tanggal===today());
+ const submitLeave=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const start=new Date(`${leaveForm.tanggal_mulai}T00:00:00`),end=new Date(`${leaveForm.tanggal_selesai}T00:00:00`);if(end<start){setError('Tanggal selesai harus setelah tanggal mulai.');return}const days=Math.floor((end.getTime()-start.getTime())/86400000)+1;const {error:e1}=await supabase.from('hris_employee_leave_requests').insert({...leaveForm,id_karyawan:employee.id_karyawan,jumlah_hari:days});if(e1)setError(e1.message);else{setNotice('Pengajuan cuti berhasil dikirim ke HR.');setLeaveForm({...leaveForm,tanggal_mulai:today(),tanggal_selesai:today(),alasan:''});await load()}};
+ const submitOt=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_overtime_requests').insert({id_karyawan:employee.id_karyawan,tanggal:otForm.tanggal,menit:Number(otForm.menit),alasan:otForm.alasan});if(e1)setError(e1.message);else{setNotice('Pengajuan lembur berhasil dikirim.');setOtForm({...otForm,menit:'60',alasan:''});await load()}};
+ const submitProfile=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_profile_requests').insert({...profileForm,id_karyawan:employee.id_karyawan,old_value:profileForm.field_name==='email'?employee.email||'':''});if(e1)setError(e1.message);else{setNotice('Permintaan perubahan profil berhasil dikirim.');setProfileForm({...profileForm,new_value:'',reason:''})}}; const submitFeedback=async(draft:SuggestionDraft)=>{
+   if(!employee) return;
+   setError('');
+   setNotice('');
+   const payload={id_karyawan:employee.id_karyawan,kategori:draft.category,judul:draft.title.trim(),isi:draft.content.trim()};
+   const {data,error:e1}=await supabase.from('hris_employee_feedback').insert(payload).select('id,kategori,judul,isi,status,tanggapan_hr,created_at,updated_at').single();
+   if(e1) throw new Error(e1.message);
+   if(data)setFeedbacks(x=>[data,...x]);
+ };
+ const markRead=async(id:string)=>{await supabase.from('hris_employee_notifications').update({is_read:true}).eq('id',id);setNotifications(x=>x.map(n=>n.id===id?{...n,is_read:true}:n))};
+ const printPayslip=(id:string)=>{setDetailPayroll(id);setTimeout(()=>window.print(),150)};
+ const stats=useMemo(()=>({hadir:attendance.filter(a=>['Hadir','Tepat Waktu','Terlambat'].includes(a.status||'')).length,cuti:leaves.filter(x=>x.status==='Disetujui').reduce((s,x)=>s+Number(x.jumlah_hari||0),0),latest:payroll[0],unread:notifications.filter(n=>!n.is_read).length}),[attendance,leaves,payroll,notifications]);
+ const tabs:[Tab,string][]=[['home','Ringkasan'],['attendance','Absensi'],['leave','Cuti'],['overtime','Lembur'],['schedule','Jadwal'],['payslip','Slip Gaji'],['feedback','Kotak Saran'],['profile','Profil']];
+ if(loading&&!employee&&!user)return <PortalLoadingScreen/>;
+ if(!employee)return <div className="employee-login"><div className="employee-login-card"><div className="employee-logo">M</div><div className="login-copy"><span className="portal-eyebrow">TAUTAN AKUN</span><h2>Data karyawan belum terhubung</h2><p>Hubungi HR/Admin untuk menghubungkan akun Supabase Anda dengan data karyawan.</p></div><button className="portal-secondary" onClick={logout}>Keluar</button></div></div>;
+ if(employee.status_aktif===false)return <div className="employee-login"><div className="employee-login-card"><div className="employee-logo">M</div><div className="login-copy"><span className="portal-eyebrow">STATUS AKUN</span><h2>Menunggu Verifikasi</h2><p>Data Anda sedang diperiksa oleh HR/Admin.</p></div><button className="portal-secondary" onClick={logout}>Keluar</button></div></div>;
+ return <div className="employee-portal"><header className="employee-topbar"><div className="employee-brand"><div className="employee-logo"><img src={moonLogo} alt="Project by Tirta" /></div><div><strong>Project by Tirta</strong><small>Layanan Karyawan</small></div></div><div className="employee-user"><div className="notification-dot">{stats.unread}</div><div><b>{employee.nama}</b><small>{employee.jabatan||t('employee')}</small></div><button className="portal-logout" onClick={logout}>Keluar</button></div></header>
+ <main className="employee-page"><div className="employee-heading"><div><span className="portal-eyebrow">LAYANAN KARYAWAN · V12</span><h1>{tab==='home'?t('welcome') + ', '+employee.nama:tabs.find(x=>x[0]===tab)?.[1]}</h1><p>Absensi aman, layanan HR, payroll, dan pengajuan dalam satu portal.</p></div><div className="date-chip">{new Intl.DateTimeFormat('id-ID',{dateStyle:'full'}).format(new Date())}</div></div>
+ <nav className="employee-tabs">{tabs.map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>setTab(k)}>{l}{k==='home'&&stats.unread>0?<em>{stats.unread}</em>:null}</button>)}</nav>
+ {notice&&<div className="portal-info">{notice}<button className="portal-link" onClick={()=>setNotice('')}>Tutup</button></div>}{error&&<div className="portal-error">{error}<button className="portal-link" onClick={()=>setError('')}>Tutup</button></div>}
+ {tab==='home'&&<><section className="ess-kpis"><div className="portal-card ess-kpi"><small>KEHADIRAN TERCATAT</small><strong>{stats.hadir}</strong><span>90 data terakhir</span></div><div className="portal-card ess-kpi"><small>CUTI DISETUJUI</small><strong>{stats.cuti}</strong><span>hari</span></div><div className="portal-card ess-kpi"><small>SLIP TERBARU</small><strong>{stats.latest?money(Number(stats.latest.gaji_bersih)):'-'}</strong><span>{stats.latest?.periode||'Belum tersedia'}</span></div><div className="portal-card ess-kpi"><small>NOTIFIKASI</small><strong>{stats.unread}</strong><span>belum dibaca</span></div></section>
+ <section className="attendance-grid"><div className="portal-card attendance-card"><div className="card-title"><div><span className="card-kicker">ABSENSI AMAN</span><h2>Absensi Hari Ini</h2></div><span className="status-badge">GPS + Selfie</span></div><div className="attendance-meta"><div><small>Masuk</small><b>{todayAtt?.jam_masuk||'Belum'}</b></div><div><small>Pulang</small><b>{todayAtt?.jam_pulang||'Belum'}</b></div></div><div className="security-box"><b>{geo?'Lokasi siap':'Lokasi belum diambil'} · {selfie?'Selfie siap':'Selfie belum diambil'}</b><p>Untuk absen masuk/keluar, portal meminta lokasi perangkat dan selfie. Data digunakan sebagai bukti kehadiran sesuai kebijakan perusahaan.</p></div><div className="attendance-actions"><button className="portal-secondary" onClick={getGeo} disabled={geoLoading}>{geoLoading?'Mengambil GPS...':geo?`GPS ±${Math.round(geo.accuracy)} m`:'Ambil Lokasi GPS'}</button><button className="portal-secondary" onClick={cameraOn?takeSelfie:startCamera} disabled={cameraOn&&!cameraReady}>{cameraOn?(cameraReady?'Ambil Selfie':'Menyiapkan kamera...'):selfie?'Buka Kamera Lagi':'Buka Kamera'}</button></div>{cameraError&&<div className="portal-error compact">{cameraError}</div>}{cameraOn&&<div className="camera-frame"><video ref={videoRef} autoPlay playsInline muted onLoadedMetadata={()=>setCameraReady(true)} onCanPlay={()=>setCameraReady(true)}/><div className="camera-overlay">{cameraReady?'Posisikan wajah di tengah frame':'Menyiapkan pratinjau kamera...'}</div></div>}{selfie&&<div className="selfie-preview"><img src={selfie} alt="Pratinjau selfie"/><button className="portal-link" onClick={()=>setSelfie('')}>Ambil ulang</button></div>}<div className="attendance-actions"><button className="portal-primary" disabled={clockBusy||!!todayAtt?.jam_masuk} onClick={clockIn}>{clockBusy?'Memproses...':'Masuk'}</button><button className="portal-primary" disabled={clockBusy||!todayAtt?.jam_masuk||!!todayAtt?.jam_pulang} onClick={clockOut}>{clockBusy?'Memproses...':'Pulang'}</button></div></div>
+ <div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">AKSES CEPAT</span><h2>Layanan Saya</h2></div></div><div className="quick-list"><button onClick={()=>setTab('leave')}><b>Ajukan Cuti</b><span>Pengajuan dan riwayat →</span></button><button onClick={()=>setTab('overtime')}><b>Ajukan Lembur</b><span>Masukkan durasi & alasan →</span></button><button onClick={()=>setTab('schedule')}><b>Lihat Jadwal</b><span>Shift kerja mendatang →</span></button><button onClick={()=>setTab('payslip')}><b>Slip Gaji</b><span>Detail & cetak PDF →</span></button></div></div></section>
+ <section className="portal-grid"><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PUSAT NOTIFIKASI</span><h2>Notifikasi Terbaru</h2></div></div><div className="notification-list">{notifications.slice(0,5).map(n=><button className={!n.is_read?'unread':''} key={n.id} onClick={()=>markRead(n.id)}><span><b>{n.title}</b><small>{n.message}</small></span><time>{new Date(n.created_at).toLocaleDateString('id-ID')}</time></button>)}{!notifications.length&&<p className="muted">Belum ada notifikasi.</p>}</div></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PROFIL</span><h2>Ringkasan Karyawan</h2></div><button className="portal-secondary" onClick={()=>setTab('profile')}>Buka Profil</button></div><div className="info-list"><div><small>ID Karyawan</small><b>{employee.id_karyawan}</b></div><div><small>Departemen</small><b>{employee.departemen||'-'}</b></div><div><small>Jabatan</small><b>{employee.jabatan||'-'}</b></div><div><small>Tanggal Masuk</small><b>{employee.tanggal_masuk?dateLabel(employee.tanggal_masuk):'-'}</b></div></div></div></section></>}
+ {tab==='attendance'&&<section className="portal-card table-card"><div className="card-title"><div><span className="card-kicker">ABSENSI</span><h2>Riwayat Absensi</h2></div><button className="portal-secondary" onClick={()=>setTab('home')}>Absensi Hari Ini</button></div><div className="table-scroll"><table><thead><tr><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>GPS</th><th>Sumber</th></tr></thead><tbody>{attendance.map((a,i)=><tr key={a.id||i}><td>{dateLabel(a.tanggal)}</td><td>{a.jam_masuk||'-'}</td><td>{a.jam_pulang||'-'}</td><td><span className="status-badge">{a.status||'Tercatat'}</span></td><td>{a.latitude&&a.longitude?'Tersimpan':'-'}</td><td>{a.sumber||'Manual'}</td></tr>)}{!attendance.length&&<tr><td colSpan={6}>Belum ada data absensi.</td></tr>}</tbody></table></div></section>}
+ {tab==='leave'&&<section className="portal-grid"><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PENGAJUAN CUTI</span><h2>Ajukan Cuti / Izin</h2></div></div><form className="employee-form" onSubmit={submitLeave}><label>Jenis<select value={leaveForm.jenis} onChange={e=>setLeaveForm({...leaveForm,jenis:e.target.value})}><option>Tahunan</option><option>Sakit</option><option>Khusus</option><option>Izin</option></select></label><div className="form-two"><label>Mulai<input type="date" value={leaveForm.tanggal_mulai} onChange={e=>setLeaveForm({...leaveForm,tanggal_mulai:e.target.value})}/></label><label>Selesai<input type="date" value={leaveForm.tanggal_selesai} onChange={e=>setLeaveForm({...leaveForm,tanggal_selesai:e.target.value})}/></label></div><label>{t('reason')}<textarea value={leaveForm.alasan} onChange={e=>setLeaveForm({...leaveForm,alasan:e.target.value})} required/></label><button className="portal-primary">Kirim Pengajuan</button></form></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">SALDO</span><h2>Saldo Cuti</h2></div></div><div className="balance-list">{balances.slice(0,6).map(b=><div key={b.id}><span>{b.jenis}</span><b>{Math.max(0,Number(b.saldo||0)-Number(b.terpakai||0))} hari</b></div>)}{!balances.length&&<p className="muted">Saldo belum tersedia.</p>}</div><div className="request-list">{leaves.map(x=><div key={x.id}><div><b>{x.jenis}</b><small>{dateLabel(x.tanggal_mulai)} — {dateLabel(x.tanggal_selesai)}</small></div><span className="status-badge">{x.status}</span></div>)}</div></div></section>}
+ {tab==='overtime'&&<section className="portal-grid"><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PENGAJUAN LEMBUR</span><h2>Ajukan Lembur</h2></div></div><form className="employee-form" onSubmit={submitOt}><label>Tanggal<input type="date" value={otForm.tanggal} onChange={e=>setOtForm({...otForm,tanggal:e.target.value})}/></label><label>Durasi (menit)<input type="number" min="1" max="1440" value={otForm.menit} onChange={e=>setOtForm({...otForm,menit:e.target.value})} required/></label><label>{t('reason')}<textarea value={otForm.alasan} onChange={e=>setOtForm({...otForm,alasan:e.target.value})} required/></label><button className="portal-primary">Kirim Pengajuan</button></form></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">RIWAYAT</span><h2>Status Lembur</h2></div></div><div className="request-list">{otRequests.map(x=><div key={x.id}><div><b>{dateLabel(x.tanggal)}</b><small>{x.menit} menit · {x.alasan}</small></div><span className="status-badge">{x.status}</span></div>)}{!otRequests.length&&<p className="muted">Belum ada pengajuan lembur.</p>}</div></div></section>}
+ {tab==='schedule'&&<section className="portal-card table-card"><div className="card-title"><div><span className="card-kicker">KALENDER KERJA</span><h2>Jadwal Kerja Mendatang</h2></div></div><div className="schedule-grid">{schedule.map(s=><div className="schedule-item" key={s.id}><small>{dateLabel(s.tanggal)}</small><b>{s.hris_shift?.nama||'Shift belum ditentukan'}</b><span>{s.hris_shift?.jam_masuk||'--:--'} — {s.hris_shift?.jam_pulang||'--:--'}</span><em>{s.status}</em></div>)}{!schedule.length&&<div className="empty-state"><h2>Belum ada jadwal</h2><p>Jadwal kerja Anda belum dipublikasikan.</p></div>}</div></section>}
+ {tab==='payslip'&&<section className="payslip-grid">{payroll.map(p=><div className="portal-card payslip-card" key={p.id}><div className="card-title"><div><span className="card-kicker">SLIP GAJI</span><h2>Periode {p.periode}</h2></div><span className="status-badge">{p.status}</span></div><div className="salary-value">{money(Number(p.gaji_bersih||0))}</div><p>Gaji Bersih</p><div className="salary-lines">{(lines[p.id]||[]).map(x=><div key={x.id}><span>{x.nama}</span><b>{money(Number(x.amount||0))}</b></div>)}</div><button className="portal-secondary full" onClick={()=>printPayslip(p.id)}>Cetak / Simpan PDF</button></div>)}{!payroll.length&&<div className="portal-card empty-state"><div className="empty-icon">P</div><h2>Belum ada slip gaji</h2><p>Slip muncul setelah payroll diproses dan dipublish oleh HR.</p></div>}{detailPayroll&&<div className="print-slip" id="print-slip">{(()=>{const p=payroll.find(x=>x.id===detailPayroll);return p?<><div className="print-head"><b>Project by Tirta</b><span>SLIP GAJI KARYAWAN</span></div><h2>Slip Gaji · {p.periode}</h2><p>{employee.nama} · {employee.id_karyawan}</p><hr/><div className="print-lines">{(lines[p.id]||[]).map(x=><div key={x.id}><span>{x.nama}</span><b>{money(Number(x.amount||0))}</b></div>)}<div className="total"><span>Gaji Bersih</span><b>{money(Number(p.gaji_bersih||0))}</b></div></div></>:null})()}</div>}</section>}
+ {tab==='feedback'&&<section className="portal-grid">
+<SuggestionBox onSubmit={submitFeedback}/>
+<div className="portal-card info-card">
+<div className="card-title"><div><span className="card-kicker">RIWAYAT MASUKAN</span><h2>Masukan Saya</h2></div></div>
+<div className="request-list">
+{feedbacks.map(x=><div key={x.id}><div><b>{x.judul}</b><small>{x.kategori} · {new Date(x.created_at).toLocaleDateString('id-ID')}</small>{x.tanggapan_hr&&<small><strong>Tanggapan HR:</strong> {x.tanggapan_hr}</small>}</div><span className="status-badge">{x.status}</span></div>)}
+{!feedbacks.length&&<p className="muted">Belum ada saran atau masukan yang dikirim.</p>}
+</div>
+</div>
+</section>}{tab==='profile'&&<section className="portal-grid"><div className="portal-card info-card"><div className="portal-profile"><div className="portal-avatar">{employee.nama.charAt(0).toUpperCase()}</div><div><h3>{employee.nama}</h3><p>{employee.jabatan||t('employee')} · {employee.departemen||'-'}</p></div></div><div className="info-list"><div><small>Email</small><b>{employee.email||'-'}</b></div><div><small>ID Karyawan</small><b>{employee.id_karyawan}</b></div><div><small>Status</small><b>{employee.status_karyawan||t('active')}</b></div></div></div><div className="portal-card info-card"><div className="card-title"><div><span className="card-kicker">PERUBAHAN DATA</span><h2>{t('request_data_change')}</h2></div></div><form className="employee-form" onSubmit={submitProfile}><label>{t('data_to_change')}<select value={profileForm.field_name} onChange={e=>setProfileForm({...profileForm,field_name:e.target.value})}><option value="no_telp">{t('phone_number')}</option><option value="alamat_rumah">{t('home_address')}</option><option value="email">Email</option></select></label><label>{t('new_value')}<input value={profileForm.new_value} onChange={e=>setProfileForm({...profileForm,new_value:e.target.value})} required/></label><label>{t('reason')}<textarea value={profileForm.reason} onChange={e=>setProfileForm({...profileForm,reason:e.target.value})}/></label><button className="portal-primary">{t('send_request')}</button></form></div></section>}
+ </main></div>;
+}
+
+function PortalLoadingScreen(){
+ return <main className="employee-loading-screen" role="status" aria-live="polite">
+  <section className="employee-loading-card">
+   <div className="employee-loading-logo"><img src={moonLogo} alt="Project by Tirta"/></div>
+   <div className="employee-loading-copy"><strong>Portal Karyawan</strong><span>Menyiapkan data Anda…</span></div>
+   <div className="employee-loading-bar" aria-hidden="true"><i/></div>
+   <div className="employee-loading-skeletons" aria-hidden="true"><i/><i/><i/></div>
+  </section>
+ </main>
+}
