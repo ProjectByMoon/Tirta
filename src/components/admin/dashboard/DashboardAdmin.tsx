@@ -481,69 +481,22 @@ export default function DashboardAdmin() {
     {
       title: 'UTAMA',
       items: [
-        ['overview', t('dashboard') || 'Dashboard', 'home'] as [MenuKey, string, string],
-        ['professional-suite', 'Professional Suite', 'kpi'] as [MenuKey, string, string]
+        ['overview', 'Beranda', 'home'] as [MenuKey, string, string],
+        ['professional-suite', 'Professional Suite', 'kpi'] as [MenuKey, string, string],
+        ['attendance', 'Absensi', 'clock'] as [MenuKey, string, string],
+        ['reports', 'Laporan', 'report'] as [MenuKey, string, string],
+        ['feedback', 'Kotak Saran', 'request'] as [MenuKey, string, string]
+
       ]
     },
     {
-      title: 'PEOPLE',
-      items: [
-        ['employees', t('employees') || 'Semua Karyawan', 'users'] as [MenuKey, string, string],
-        ['id-card', 'ID Card', 'card'] as [MenuKey, string, string],
-        ['employee-360', 'Employee 360°', 'users'] as [MenuKey, string, string],
-        ['organization', 'Organisasi', 'org'] as [MenuKey, string, string],
-        ['hr-operations', 'HR Operations', 'settings'] as [MenuKey, string, string]
-      ]
-    },
-    {
-      title: t('attendance') || 'ABSENSI',
-      items: [
-        ['attendance', t('attendance_summary'), 'clock'] as [MenuKey, string, string],
-        ['attendance-today', t('attendance_today'), 'check'] as [MenuKey, string, string],
-        ['late', t('late'), 'alert'] as [MenuKey, string, string],
-        ['leave', t('leave_sick'), 'leave'] as [MenuKey, string, string],
-        ['overtime', t('overtime'), 'arrow'] as [MenuKey, string, string],
-        ['selfie', t('selfie_monitoring'), 'camera'] as [MenuKey, string, string]
-      ]
-    },
-    {
-      title: t('payroll') || 'PAYROLL',
-      items: [
-        ['payroll', t('monthly_payroll'), 'payroll'] as [MenuKey, string, string],
-        ['production-hr', t('hr_transaction_center') || 'Pusat Transaksi HR', 'settings'] as [MenuKey, string, string],
-        ['payroll-production-v22', t('payroll_control') || 'Kontrol Payroll', 'payroll'] as [MenuKey, string, string],
-        ['payroll-components', t('salary_components'), 'components'] as [MenuKey, string, string],
-        ['payroll-overtime', t('overtime_payroll'), 'arrow'] as [MenuKey, string, string],
-        ['payslip', t('payslip'), 'calendar'] as [MenuKey, string, string]
-      ]
-    },
-    {
-      title: t('talent') || 'TALENTA',
+      title: 'TALENT',
       items: [
         ['performance', t('performance'), 'arrow'] as [MenuKey, string, string],
         ['kpi', t('kpi_target'), 'kpi'] as [MenuKey, string, string],
-        ['recruitment-v25', t('recruitment_ats') || 'Rekrutmen', 'recruitment'] as [MenuKey, string, string],
-        ['candidates', t('candidates'), 'users'] as [MenuKey, string, string]
       ]
     },
-    {
-      title: t('reporting') || 'PELAPORAN',
-      items: [
-        ['reports', t('reports'), 'report'] as [MenuKey, string, string]
-      ]
-    },
-    {
-      title: t('system') || 'SYSTEM',
-      items: [
-        ['approvals', t('approvals'), 'check'] as [MenuKey, string, string],
-        ['notifications', t('notifications'), 'bell'] as [MenuKey, string, string],
-        ['feedback', 'Kotak Saran', 'request'] as [MenuKey, string, string],
-        ['system-health', t('system_health'), 'health'] as [MenuKey, string, string],
-        ['settings', t('settings') || 'Pengaturan', 'settings'] as [MenuKey, string, string],
-        ['roles', t('roles_permissions'), 'users'] as [MenuKey, string, string],
-        ['audit', t('audit_log'), 'request'] as [MenuKey, string, string]
-      ]
-    }
+
   ], [t]);
 
   const visibleMenuGroups = useMemo(() =>
@@ -935,7 +888,8 @@ return (
     {menu==='payroll-overtime'&&<PayrollEnterprise employees={employees} view="overtime"/>}
     {menu==='payslip'&&<PayrollEnterprise employees={employees} view="payslip"/>}
     {menu==='payroll-engine'&&<PayrollEngineV9/>}{menu==='payroll-production-v22'&&<PayrollProductionV22/>}{menu==='payroll-indonesia-v23'&&<PayrollIndonesiaV23/>}
-    {['performance','kpi'].includes(menu)&&<TalentModule initial={menu} employees={employees}/>} {menu==='recruitment-v25'&&<RecruitmentATSv25/>} {menu.startsWith('enterprise-v')&&menu!=='enterprise-v20'&&<EnterpriseRoadmapV26V35 version={menu.replace('enterprise-','') as any}/>} {['recruitment','candidates'].includes(menu)&&<RecruitmentEnterprise/>}
+    {['performance','kpi'].includes(menu)&&<TalentModule key={menu} initial={menu} employees={employees}/>} {menu==='recruitment-v25'&&<RecruitmentATSv25/>} {menu.startsWith('enterprise-v')&&menu!=='enterprise-v20'&&<EnterpriseRoadmapV26V35 version={menu.replace('enterprise-','') as any}/>} {['recruitment','candidates'].includes(menu)&&<RecruitmentEnterprise/>}
+
     {menu==='reports'&&<Reports employees={employees} attendance={attendance} onExport={exportCsv}/>}
     {menu==='settings'&&<Settings/>}{menu==='roles'&&<RoleEditorEnterprise userRole={userRole}/>} {menu==='audit'&&<Audit/>}{menu==='approvals'&&<ApprovalCenter/>}{menu==='notifications'&&<Notifications/>}
 {menu==='feedback'&&<FeedbackAdmin employees={employees}/>}
@@ -1397,13 +1351,15 @@ function AttendanceModule({type,data,onRefresh,onExport}:{type:MenuKey;data:Abse
  const [tab,setTab]=useState(initial),[open,setOpen]=useState(false),[employees,setEmployees]=useState<Karyawan[]>([]);
  const [f,setF]=useState({id_karyawan:'',tanggal:isoToday(),jam_masuk:'07:00',jam_pulang:'16:00',status:'Hadir',lokasi:'Manual HR',keterangan:''});
  useEffect(()=>{supabase.from('karyawan').select('*').order('nama').then(({data})=>setEmployees(data||[]))},[]);
- const items=[['summary',t('attendance_summary'),'clock'],['today',t('attendance_today'),'check'],['late',t('late'),'alert'],['leave',`${t('leave')} & ${t('sick')}`,'leave'],['overtime',t('overtime'),'arrow'],['selfie',t('selfie_monitoring'),'camera']];
+ const items=[['summary',t('attendance_summary'),'clock'],['today',t('attendance_today'),'check'],['late',t('late'),'alert'],['leave',`${t('leave')} & ${t('sick')}`,'leave'],['overtime',t('overtime'),'arrow'],['selfie',t('selfie_monitoring'),'camera']].map(([key,label,icon])=>({key,label,icon}));
+
  let rows=data;if(tab==='today')rows=data.filter(a=>a.tanggal===isoToday());if(tab==='late')rows=data.filter(a=>Number(a.keterlambatan_menit||0)>0||(a.status||'').toLowerCase().includes('terlambat'));if(tab==='leave')rows=data.filter(a=>/izin|sakit/i.test(a.status||''));if(tab==='overtime')rows=data.filter(a=>Number(a.lembur_menit||0)>0);if(tab==='selfie')rows=data.filter(a=>!!a.foto||!!a.selfie_masuk);
  const save=async(e:FormEvent)=>{e.preventDefault();const emp=employees.find(x=>x.id_karyawan===f.id_karyawan);if(!emp){await appAlert(t('select_employee'));return;}const {error}=await supabase.from('absensi').insert({...f,nama:emp.nama,jabatan:emp.jabatan||'',total_jam: f.jam_masuk && f.jam_pulang ? (()=>{ const [ih,im]=String(f.jam_masuk).split(':').map(Number); const [oh,om]=String(f.jam_pulang).split(':').map(Number); let mins=(oh*60+om)-(ih*60+im); if(mins<0) mins+=1440; return `${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`; })() : ''});if(error)await appAlert(error.message);else{setOpen(false);onRefresh()}};
  const del=async(id:string)=>{if(await appConfirm(t('delete_attendance_confirm'))){const {error}=await supabase.from('absensi').delete().eq('id',id);if(error)await appAlert(error.message);else onRefresh()}};
- return <Branch title={t('attendance')} desc={t('attendance_desc')} items={items.map(([key,label,icon])=>({key,label,icon}))} tab={tab} setTab={setTab} action={tab==='summary'?t('input_attendance'):t('export_csv')} onAction={tab==='summary'?()=>setOpen(true):onExport}>
+ return <Branch title={t('attendance')} desc={t('attendance_desc')} items={items} tab={tab} setTab={setTab} action={tab==='summary'?t('input_attendance'):t('export_csv')} onAction={tab==='summary'?()=>setOpen(true):onExport}>
   <div className="stat-grid three"><Stat title={t('attendance_data')} value={String(rows.length)} hint={t('data_displayed')} icon="calendar"/><Stat title={t('present')} value={String(rows.filter(a=>/hadir|tepat|terlambat/i.test(a.status||'')).length)} hint={t('attendance')} icon="check"/><Stat title={t('needs_review')} value={String(rows.filter(a=>Number(a.lembur_menit||0)>0||Number(a.keterlambatan_menit||0)>0).length)} hint={t('overtime_late')} icon="alert"/></div>
   <div className="panel table-panel"><div className="table-wrap"><table><thead><tr><th>{t('photo')}</th><th>{t('employee')}</th><th>{t('date')}</th><th>{t('check_in')}</th><th>{t('check_out')}</th><th>{t('total')}</th><th>{t('status')}</th><th>{t('location')}</th><th>{t('actions')}</th></tr></thead><tbody>{rows.length?rows.map((a,i)=><tr key={a.id||i}><td>{a.foto||a.selfie_masuk?<img className="selfie" src={a.foto||a.selfie_masuk}/>:<div className="selfie blank">—</div>}</td><td><b>{a.nama||'-'}</b><small>{a.id_karyawan||''}</small></td><td>{a.tanggal||'-'}</td><td>{a.jam_masuk||'-'}</td><td>{a.jam_pulang||'-'}</td><td>{a.total_jam||'-'}</td><td><Status value={a.status||'-'}/></td><td>{a.lokasi||a.lokasi_masuk||'-'}</td><td>{a.id !== undefined && (
+
   <button className="danger-text" onClick={() => del(String(a.id))}>
     Hapus
   </button>
@@ -1435,8 +1391,9 @@ function LeaveModule({initial}:{initial:MenuKey}){const {t}=useTranslation();
 function TalentModule({initial,employees}:{initial:MenuKey;employees:Karyawan[]}){const {t}=useTranslation();
  const [tab,setTab]=useState(initial==='kpi'?'kpi':initial==='recruitment'?'vacancies':initial==='candidates'?'candidates':'performance'),[rows,setRows]=useState<any[]>([]),[modal,setModal]=useState(false);
  const load=async()=>{const table=tab==='kpi'?'hris_kpi':tab==='vacancies'?'hris_lowongan':tab==='candidates'?'hris_kandidat':tab==='interviews'?'hris_interview':'hris_performance';const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false});if(!error)setRows(data||[]);else setRows([])};useEffect(()=>{load()},[tab]);
- const items=[['performance',t('performance'),'arrow'],['kpi',t('kpi_target'),'kpi'],['vacancies',t('vacancies'),'recruitment'],['candidates',t('candidates'),'users'],['interviews',t('interviews'),'calendar']];
- return <Branch title={t('talent')} desc={t('talent_desc')} items={items.map(([key,label,icon])=>({key,label,icon}))} tab={tab} setTab={setTab} action={`＋ ${t('add')}`} onAction={()=>setModal(true)}>{<TalentTable tab={tab} rows={rows}/>} {modal&&<TalentForm tab={tab} employees={employees} onClose={()=>setModal(false)} onSaved={()=>{setModal(false);load()}}/>}</Branch>
+ const items=[['performance',t('performance'),'arrow'],['kpi',t('kpi_target'),'kpi']].map(([key,label,icon])=>({key,label,icon}));
+ return <Branch title={t('talent')} desc={t('talent_desc')} items={items} tab={tab} setTab={setTab} action={`＋ ${t('add')}`} onAction={()=>setModal(true)}>{<TalentTable tab={tab} rows={rows}/>} {modal&&<TalentForm tab={tab} employees={employees} onClose={()=>setModal(false)} onSaved={()=>{setModal(false);load()}}/>}</Branch>
+
 }
 function TalentTable({tab,rows}:{tab:string;rows:any[]}){let cols:string[]=[];if(tab==='kpi')cols=['id_karyawan','periode','indikator','target','realisasi','skor','status'];else if(tab==='vacancies')cols=['posisi','departemen','jumlah_kebutuhan','status','tanggal_buka','tanggal_tutup'];else if(tab==='candidates')cols=['nama','email','no_telp','posisi','tahap','status'];else if(tab==='interviews')cols=['kandidat','tanggal','jam','interviewer','hasil','status'];else cols=['id_karyawan','periode','nilai','catatan','status'];return <div className="panel table-panel"><div className="table-wrap"><table><thead><tr>{cols.map(c=><th key={c}>{fieldLabel(c)}</th>)}</tr></thead><tbody>{rows.length?rows.map(r=><tr key={r.id}>{cols.map(c=><td key={c}>{c==='status'?<Status value={String(r[c]??'-')}/>:String(r[c]??'-')}</td>)}</tr>):<Empty cols={cols.length}/>}</tbody></table></div></div>}
 function TalentForm({tab,employees,onClose,onSaved}:{tab:string;employees:Karyawan[];onClose:()=>void;onSaved:()=>void}){const {t}=useTranslation();
@@ -1526,19 +1483,57 @@ function Settings(){
     };
   };
 
+  const hexToRgb=(hex:string)=>{
+    const h=hex.replace('#','').trim();
+    if(h.length!==6) return null;
+    const n=parseInt(h,16);
+    if(Number.isNaN(n)) return null;
+    return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+  };
+
+  const relativeLuminance=(hex:string)=>{
+    const rgb=hexToRgb(hex);
+    if(!rgb) return 1;
+    const channel=(v:number)=>{
+      const c=v/255;
+      return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+    };
+    return 0.2126*channel(rgb.r)+0.7152*channel(rgb.g)+0.0722*channel(rgb.b);
+  };
+
+  const contrastRatio=(foreground:string,background:string)=>{
+    const a=relativeLuminance(foreground);
+    const b=relativeLuminance(background);
+    const light=Math.max(a,b);
+    const dark=Math.min(a,b);
+    return (light+0.05)/(dark+0.05);
+  };
+
+  const getReadableText=(background:string,preferred:string)=>{
+    const white='#ffffff';
+    const black='#111827';
+    if(contrastRatio(preferred,background)>=4.5) return preferred;
+    return contrastRatio(black,background)>=contrastRatio(white,background)
+      ? black
+      : white;
+  };
+
   const applyTheme=(input:Partial<ThemeDefinition>,persist=true)=>{
     const theme=normalizeTheme(input);
     const root=document.documentElement;
     const vars:Record<string,string>={
       '--mx-primary':theme.primary,
-      '--mx-primary-contrast':'#ffffff',
+      '--mx-primary-contrast':getReadableText(theme.primary,'#ffffff'),
       '--mx-accent':theme.accent,
       '--mx-background':theme.background,
       '--mx-surface':theme.surface,
       '--mx-surface-alt':theme.background,
-      '--mx-text':theme.text,
-      '--mx-text-secondary':theme.text,
-      '--mx-text-muted':theme.text,
+      '--mx-text':getReadableText(theme.background,theme.text),
+      '--mx-text-secondary':getReadableText(theme.surface,'#667085'),
+      '--mx-text-muted':getReadableText(theme.surface,'#98a2b3'),
+      '--mx-control-bg':theme.surface,
+      '--mx-control-text':getReadableText(theme.surface,theme.text),
+      '--mx-control-border':theme.border,
       '--mx-border':theme.border,
       '--mx-border-strong':theme.accent,
       '--mx-focus':theme.accent,

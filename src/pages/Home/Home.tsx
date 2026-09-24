@@ -50,7 +50,6 @@ export default function Home({ onMasuk, onRegister }: HomeProps) {
           ['◷', 'Absensi', 'Absensi dan pemantauan cerdas'],
           ['Rp', 'Payroll', 'Payroll, slip gaji & kepatuhan'],
           ['◇', 'Talenta', 'Kinerja, KPI & rekrutmen'],
-          ['▥', 'Pelaporan', 'Analitik tenaga kerja & laporan'],
         ].map(([icon, title, desc]) => (
           <article key={title}><span>{icon}</span><div><b>{title}</b><small>{desc}</small></div></article>
         ))}
