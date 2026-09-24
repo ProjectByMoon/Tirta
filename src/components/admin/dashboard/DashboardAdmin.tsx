@@ -1006,7 +1006,7 @@ return (
                 </div>
               </div>}
 
-    <section className="page admin-page-frame">{loading&&<div className="loading">Memuat data…</div>{error&&<div className="alert">{error}</div>}
+    <section className="page admin-page-frame">{loading&&<div className="loading">Memuat data…</div>}{error&&<div className="alert">{error}</div>}
     {menu==='overview'&&<Overview employees={employees} attendance={attendance} present={present} late={late} payroll={payroll} onNavigate={navigate} profileName={profileName}/>}
     {menu==='professional-suite'&&<ProfessionalSuite employees={employees} attendance={attendance} onNavigate={navigate}/>}
     {menu==='id-card'&&<IDCardModule employees={employees} companyName="Project by Tirta" logoUrl={moonLogo}/> }
