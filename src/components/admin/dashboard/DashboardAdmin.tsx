@@ -255,9 +255,9 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
   };
 
   return (
-    <div style={{ display: 'grid', gap: 18 }}>
-      <div className="card">
-        <div className="card-title">
+    <div className="feedback-module">
+      <div className="card feedback-list-card">
+        <div className="card-title feedback-card-title">
           <div>
             <span className="card-kicker">{t("feedback_inbox")}</span>
             <h2>{t("employee_feedback")}</h2>
@@ -351,8 +351,8 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
       </div>
 
       {selected && (
-        <div className="card">
-          <div className="card-title">
+        <div className="card feedback-detail-card">
+          <div className="card-title feedback-card-title">
             <div>
               <span className="card-kicker">{selected.kategori.toUpperCase()}</span>
               <h2>{selected.judul}</h2>
@@ -372,22 +372,15 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
           </div>
 
           <div
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              background: 'var(--panel-soft, rgba(127,127,127,.08))',
-              marginBottom: 16,
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.6
-            }}
+            className="feedback-message"
           >
             {selected.isi}
           </div>
 
-          <div style={{ display: 'grid', gap: 10 }}>
-            <label>
+          <div className="feedback-form">
+            <label className="feedback-field">
               <strong>Status</strong>
-              <select
+              <select className="feedback-control"
                 value={selected.status}
                 onChange={e =>
                   setSelected({
@@ -402,9 +395,9 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
               </select>
             </label>
 
-            <label>
+            <label className="feedback-field">
               <strong>Tanggapan HR</strong>
-              <textarea
+              <textarea className="feedback-control feedback-textarea"
                 rows={5}
                 value={reply}
                 onChange={e => setReply(e.target.value)}
@@ -413,7 +406,7 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
               />
             </label>
 
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="feedback-actions">
               <button
                 type="button"
                 className="portal-primary"
@@ -1013,7 +1006,7 @@ return (
                 </div>
               </div>}
 
-    <section className="page">{loading&&<div className="loading">Memuat data…</div>}{error&&<div className="alert">{error}</div>}
+    <section className="page admin-page-frame">{loading&&<div className="loading">Memuat data…</div>{error&&<div className="alert">{error}</div>}
     {menu==='overview'&&<Overview employees={employees} attendance={attendance} present={present} late={late} payroll={payroll} onNavigate={navigate} profileName={profileName}/>}
     {menu==='professional-suite'&&<ProfessionalSuite employees={employees} attendance={attendance} onNavigate={navigate}/>}
     {menu==='id-card'&&<IDCardModule employees={employees} companyName="Project by Tirta" logoUrl={moonLogo}/> }
