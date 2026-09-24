@@ -192,11 +192,16 @@ export default function PortalKaryawan({onLogout}:{onLogout?:()=>void}){
  const requireSecurity=()=>{if(!geo){setError('Ambil lokasi GPS terlebih dahulu.');getGeo();return false}if(!selfie){setError('Ambil selfie terlebih dahulu.');return false}return true};
  const clockIn=async()=>{if(!employee||!requireSecurity())return;setClockBusy(true);const {error:e1}=await supabase.rpc('hris_ess_clock_in',{p_id_karyawan:employee.id_karyawan,p_tanggal:today(),p_jam:null,p_lat:geo?.lat,p_long:geo?.lng,p_accuracy:geo?.accuracy,p_selfie:selfie,p_lokasi:'GPS ESS'});setClockBusy(false);if(e1)setError(e1.message);else{setNotice('Masuk berhasil. Absensi tersimpan dengan GPS dan selfie.');setSelfie('');setGeo(null);await load()}};
  const clockOut=async()=>{if(!employee||!requireSecurity())return;setClockBusy(true);const {error:e1}=await supabase.rpc('hris_ess_clock_out',{p_id_karyawan:employee.id_karyawan,p_tanggal:today(),p_jam:null,p_lat:geo?.lat,p_long:geo?.lng,p_accuracy:geo?.accuracy,p_selfie:selfie,p_lokasi:'GPS ESS'});setClockBusy(false);if(e1)setError(e1.message);else{setNotice('Pulang berhasil.');setSelfie('');setGeo(null);await load()}};
- const todayAtt=attendance.find(a=>a.tanggal===today());
-const yesterday=(()=>{const d=new Date(`${today()}T00:00:00`);d.setDate(d.getDate()-1);return d.toISOString().slice(0,10)})();
-const activeAtt=attendance.find(a=>(a.tanggal===today()||a.tanggal===yesterday)&&a.jam_masuk&&!a.jam_pulang);
-const canClockIn=!activeAtt;
-const canClockOut=!!activeAtt;
+ const todayDate=today();
+const todayRows=attendance.filter(a=>a.tanggal===todayDate);
+
+const todayAtt=
+  todayRows.find(a=>a.jam_masuk&&!a.jam_pulang) ??
+  todayRows.find(a=>!!a.jam_masuk) ??
+  todayRows[0];
+
+const canClockIn=!todayAtt?.jam_masuk;
+const canClockOut=!!todayAtt?.jam_masuk&&!todayAtt?.jam_pulang;
  const submitLeave=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const start=new Date(`${leaveForm.tanggal_mulai}T00:00:00`),end=new Date(`${leaveForm.tanggal_selesai}T00:00:00`);if(end<start){setError('Tanggal selesai harus setelah tanggal mulai.');return}const days=Math.floor((end.getTime()-start.getTime())/86400000)+1;const {error:e1}=await supabase.from('hris_employee_leave_requests').insert({...leaveForm,id_karyawan:employee.id_karyawan,jumlah_hari:days});if(e1)setError(e1.message);else{setNotice('Pengajuan cuti berhasil dikirim ke HR.');setLeaveForm({...leaveForm,tanggal_mulai:today(),tanggal_selesai:today(),alasan:''});await load()}};
  const submitOt=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_overtime_requests').insert({id_karyawan:employee.id_karyawan,tanggal:otForm.tanggal,menit:Number(otForm.menit),alasan:otForm.alasan});if(e1)setError(e1.message);else{setNotice('Pengajuan lembur berhasil dikirim.');setOtForm({...otForm,menit:'60',alasan:''});await load()}};
  const submitProfile=async(e:React.FormEvent)=>{e.preventDefault();if(!employee)return;const {error:e1}=await supabase.from('hris_employee_profile_requests').insert({...profileForm,id_karyawan:employee.id_karyawan,old_value:profileForm.field_name==='email'?employee.email||'':''});if(e1)setError(e1.message);else{setNotice('Permintaan perubahan profil berhasil dikirim.');setProfileForm({...profileForm,new_value:'',reason:''})}}; const submitFeedback=async(draft:SuggestionDraft)=>{

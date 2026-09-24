@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { isSupabaseConfigured, supabase } from './lib/supabase/client';
 import { signIn } from './lib/auth';
+import { checkForAppUpdate } from './lib/app-update';
 
 import moonLogo from './assets/moon-logo.svg';
 
@@ -163,6 +164,8 @@ export default function App() {
      ======================================================= */
 
   useEffect(() => {
+    void checkForAppUpdate();
+
     let active = true;
 
     const boot = async () => {

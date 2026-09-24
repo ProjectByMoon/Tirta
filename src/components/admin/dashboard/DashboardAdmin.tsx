@@ -62,6 +62,14 @@ interface Absensi {
   status?: string;
   lokasi?: string;
   lokasi_masuk?: string;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  accuracy?: number | string | null;
+  akurasi_masuk?: number | string | null;
+  akurasi_pulang?: number | string | null;
+  latitude_masuk?: number | string | null;
+  longitude_masuk?: number | string | null;
+  accuracy_masuk?: number | string | null;
   keterlambatan_menit?: number | string;
   lembur_menit?: number | string;
   foto?: string;
@@ -70,7 +78,7 @@ interface Absensi {
 
 type MenuKey =
   | 'overview' | 'employees' | 'employee-360' | 'employee-add' | 'id-card' | 'organization' | 'hr-operations'
-  | 'attendance' | 'attendance-today' | 'late' | 'leave' | 'overtime' | 'selfie'
+  | 'attendance' | 'attendance-today' | 'late' | 'leave' | 'overtime' | 'selfie' | 'gps'
   | 'schedule' | 'shift' | 'holiday' | 'leave-request' | 'leave-balance' | 'approvals'
   | 'payroll' | 'production-hr' | 'payroll-engine' | 'payroll-production-v22' | 'payroll-components' | 'payroll-overtime' | 'payslip'
   | 'performance' | 'kpi' | 'recruitment-v25' | 'recruitment' | 'candidates'
@@ -1014,7 +1022,7 @@ return (
     {menu==='employee-360'&&<Employee360 employees={employees} initialEmployeeId={employee360Id}/>}
     {menu==='employee-add'&&<AddEmployee refresh={refresh} onDone={()=>navigate('employees')}/>} {menu==='hr-operations'&&<HRISCore employees={employees}/>} {menu==='production-hr'&&<ProductionHR employees={employees}/>} 
     {menu==='organization'&&<MasterData initialTab="cabang"/>}
-    {['attendance','attendance-today','late','leave','overtime','selfie'].includes(menu)&&<AttendanceModule type={menu} data={filteredA} onRefresh={refresh} onExport={()=>exportCsv(attendance as any,'laporan-absensi.csv')}/>}
+    {['attendance','attendance-today','late','leave','overtime','selfie','gps'].includes(menu)&&<AttendanceModule type={menu} data={filteredA} onRefresh={refresh} onExport={()=>exportCsv(attendance as any,'laporan-absensi.csv')}/>}
     {menu==='schedule'&&<MasterData initialTab="jadwal"/>}{menu==='shift'&&<MasterData initialTab="shift"/>}
     {menu==='holiday'&&<HolidayModule/>}
     {['leave-request','leave-balance'].includes(menu)&&<LeaveModule initial={menu}/>}
@@ -1591,24 +1599,138 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
 }
 function Branch({title,desc,items,tab,setTab,action,onAction,children}:{title:string;desc:string;items:{key:string;label:string;icon:string}[];tab:string;setTab:(v:string)=>void;action?:string;onAction?:()=>void;children:ReactNode}){return <><Heading title={title} desc={desc} action={action} onAction={onAction}/><div className="branch-nav">{items.map(i=><button key={i.key} className={tab===i.key?'active':''} onClick={()=>setTab(i.key)}><span>{i.icon}</span>{i.label}</button>)}</div>{children}</>}
 function AttendanceModule({type,data,onRefresh,onExport}:{type:MenuKey;data:Absensi[];onRefresh:()=>void;onExport:()=>void}){const {t}=useTranslation();
- const initial=type==='attendance-today'?'today':type==='late'?'late':type==='leave'?'leave':type==='overtime'?'overtime':type==='selfie'?'selfie':'summary';
+ const initial=type==='attendance-today'?'today':type==='late'?'late':type==='leave'?'leave':type==='overtime'?'overtime':type==='selfie'?'selfie':type==='gps'?'gps':'summary';
  const [tab,setTab]=useState(initial),[open,setOpen]=useState(false),[employees,setEmployees]=useState<Karyawan[]>([]);
  const [f,setF]=useState({id_karyawan:'',tanggal:isoToday(),jam_masuk:'07:00',jam_pulang:'16:00',status:'Hadir',lokasi:'Manual HR',keterangan:''});
  useEffect(()=>{supabase.from('karyawan').select('*').order('nama').then(({data})=>setEmployees(data||[]))},[]);
- const items=[['summary',t('attendance_summary'),'clock'],['today',t('attendance_today'),'check'],['late',t('late'),'alert'],['leave',`${t('leave')} & ${t('sick')}`,'leave'],['overtime',t('overtime'),'arrow'],['selfie',t('selfie_monitoring'),'camera']].map(([key,label,icon])=>({key,label,icon}));
+ const items=[['summary',t('attendance_summary'),'clock'],['today',t('attendance_today'),'check'],['late',t('late'),'alert'],['leave',`${t('leave')} & ${t('sick')}`,'leave'],['overtime',t('overtime'),'arrow'],['selfie',t('selfie_monitoring'),'camera'],['gps','GPS','location']].map(([key,label,icon])=>({key,label,icon}));
 
- let rows=data;if(tab==='today')rows=data.filter(a=>a.tanggal===isoToday());if(tab==='late')rows=data.filter(a=>Number(a.keterlambatan_menit||0)>0||(a.status||'').toLowerCase().includes('terlambat'));if(tab==='leave')rows=data.filter(a=>/izin|sakit/i.test(a.status||''));if(tab==='overtime')rows=data.filter(a=>Number(a.lembur_menit||0)>0);if(tab==='selfie')rows=data.filter(a=>!!a.foto||!!a.selfie_masuk);
+ let rows=data;
+ if(tab==='today')rows=data.filter(a=>a.tanggal===isoToday());
+ if(tab==='late')rows=data.filter(a=>Number(a.keterlambatan_menit||0)>0||(a.status||'').toLowerCase().includes('terlambat'));
+ if(tab==='leave')rows=data.filter(a=>/izin|sakit/i.test(a.status||''));
+ if(tab==='overtime')rows=data.filter(a=>Number(a.lembur_menit||0)>0);
+ if(tab==='selfie')rows=data.filter(a=>!!a.foto||!!a.selfie_masuk);
+ if(tab==='gps')rows=data.filter(a=>
+   (a.latitude!=null&&a.longitude!=null)||
+   (a.latitude_masuk!=null&&a.longitude_masuk!=null)
+ );
  const save=async(e:FormEvent)=>{e.preventDefault();const emp=employees.find(x=>x.id_karyawan===f.id_karyawan);if(!emp){await appAlert(t('select_employee'));return;}const {error}=await supabase.from('absensi').insert({...f,nama:emp.nama,jabatan:emp.jabatan||'',total_jam: f.jam_masuk && f.jam_pulang ? (()=>{ const [ih,im]=String(f.jam_masuk).split(':').map(Number); const [oh,om]=String(f.jam_pulang).split(':').map(Number); let mins=(oh*60+om)-(ih*60+im); if(mins<0) mins+=1440; return `${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`; })() : ''});if(error)await appAlert(error.message);else{setOpen(false);onRefresh()}};
  const del=async(id:string)=>{if(await appConfirm(t('delete_attendance_confirm'))){const {error}=await supabase.from('absensi').delete().eq('id',id);if(error)await appAlert(error.message);else onRefresh()}};
  return <Branch title={t('attendance')} desc={t('attendance_desc')} items={items} tab={tab} setTab={setTab} action={tab==='summary'?t('input_attendance'):t('export_csv')} onAction={tab==='summary'?()=>setOpen(true):onExport}>
   <div className="stat-grid three"><Stat title={t('attendance_data')} value={String(rows.length)} hint={t('data_displayed')} icon="calendar"/><Stat title={t('present')} value={String(rows.filter(a=>/hadir|tepat|terlambat/i.test(a.status||'')).length)} hint={t('attendance')} icon="check"/><Stat title={t('needs_review')} value={String(rows.filter(a=>Number(a.lembur_menit||0)>0||Number(a.keterlambatan_menit||0)>0).length)} hint={t('overtime_late')} icon="alert"/></div>
-  <div className="panel table-panel"><div className="table-wrap"><table><thead><tr><th>{t('photo')}</th><th>{t('employee')}</th><th>{t('date')}</th><th>{t('check_in')}</th><th>{t('check_out')}</th><th>{t('total')}</th><th>{t('status')}</th><th>{t('location')}</th><th>{t('actions')}</th></tr></thead><tbody>{rows.length?rows.map((a,i)=><tr key={a.id||i}><td>{a.foto||a.selfie_masuk?<img className="selfie" src={a.foto||a.selfie_masuk}/>:<div className="selfie blank">—</div>}</td><td><b>{a.nama||'-'}</b><small>{a.id_karyawan||''}</small></td><td>{a.tanggal||'-'}</td><td>{a.jam_masuk||'-'}</td><td>{a.jam_pulang||'-'}</td><td>{a.total_jam||'-'}</td><td><Status value={a.status||'-'}/></td><td>{a.lokasi||a.lokasi_masuk||'-'}</td><td>{a.id !== undefined && (
+  {tab==='gps' ? (
+    <div className="panel table-panel">
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{t('employee')}</th>
+              <th>{t('date')}</th>
+              <th>{t('check_in')}</th>
+              <th>{t('check_out')}</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+              <th>Akurasi</th>
+              <th>{t('status')}</th>
+              <th>Maps</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length ? rows.map((a,i)=>{
+              const lat=a.latitude ?? a.latitude_masuk;
+              const lng=a.longitude ?? a.longitude_masuk;
+              const acc=a.akurasi_masuk ?? a.akurasi_pulang ?? a.accuracy;
+              const hasGps=lat!=null&&lng!=null;
+              const mapsUrl=hasGps
+                ? `https://www.google.com/maps?q=${encodeURIComponent(String(lat)+','+String(lng))}`
+                : '';
 
-  <button className="danger-text" onClick={() => del(String(a.id))}>
-    Hapus
-  </button>
-)}
-  </td></tr>):<Empty cols={9}/>}</tbody></table></div></div>
+              return (
+                <tr key={a.id||i}>
+                  <td>
+                    <b>{a.nama||'-'}</b>
+                    <small>{a.id_karyawan||''}</small>
+                  </td>
+                  <td>{a.tanggal||'-'}</td>
+                  <td>{a.jam_masuk||'-'}</td>
+                  <td>{a.jam_pulang||'-'}</td>
+                  <td>{lat!=null?String(lat):'-'}</td>
+                  <td>{lng!=null?String(lng):'-'}</td>
+                  <td>{acc!=null?`±${Math.round(Number(acc))} m`:'-'}</td>
+                  <td><Status value={a.status||'GPS Tersimpan'}/></td>
+                  <td>
+                    {hasGps ? (
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="link-btn"
+                      >
+                        Buka Maps
+                      </a>
+                    ) : '-'}
+                  </td>
+                </tr>
+              );
+            }) : <Empty cols={9}/>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ) : (
+    <div className="panel table-panel">
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{t('photo')}</th>
+              <th>{t('employee')}</th>
+              <th>{t('date')}</th>
+              <th>{t('check_in')}</th>
+              <th>{t('check_out')}</th>
+              <th>{t('total')}</th>
+              <th>{t('status')}</th>
+              <th>{t('location')}</th>
+              <th>{t('actions')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length ? rows.map((a,i)=>(
+              <tr key={a.id||i}>
+                <td>
+                  {a.foto||a.selfie_masuk
+                    ? <img className="selfie" src={a.foto||a.selfie_masuk}/>
+                    : <div className="selfie blank">—</div>}
+                </td>
+                <td>
+                  <b>{a.nama||'-'}</b>
+                  <small>{a.id_karyawan||''}</small>
+                </td>
+                <td>{a.tanggal||'-'}</td>
+                <td>{a.jam_masuk||'-'}</td>
+                <td>{a.jam_pulang||'-'}</td>
+                <td>{a.total_jam||'-'}</td>
+                <td><Status value={a.status||'-'}/></td>
+                <td>{a.lokasi||a.lokasi_masuk||'-'}</td>
+                <td>
+                  {a.id !== undefined && (
+                    <button
+                      className="danger-text"
+                      onClick={() => del(String(a.id))}
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </td>
+              </tr>
+            )) : <Empty cols={9}/>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )}
+
   {open&&<SimpleModal title={t('manual_attendance_input')} onClose={()=>setOpen(false)} onSave={save}><label>{t('employee')}<select required value={f.id_karyawan} onChange={e=>setF({...f,id_karyawan:e.target.value})}><option value="">{t('select_employee')}</option>{employees.map(k=><option key={k.id_karyawan} value={k.id_karyawan}>{k.nama} — {k.id_karyawan}</option>)}</select></label><label>{t('date')}<input type="date" value={f.tanggal} onChange={e=>setF({...f,tanggal:e.target.value})}/></label><label>{t('check_in')}<input type="time" value={f.jam_masuk} onChange={e=>setF({...f,jam_masuk:e.target.value})}/></label><label>{t('check_out')}<input type="time" value={f.jam_pulang} onChange={e=>setF({...f,jam_pulang:e.target.value})}/></label><label>{t('status')}<select value={f.status} onChange={e=>setF({...f,status:e.target.value})}><option>Hadir</option><option>Terlambat</option><option>Izin</option><option>Sakit</option><option>Alpa</option></select></label><label>{t('location')}<input value={f.lokasi} onChange={e=>setF({...f,lokasi:e.target.value})}/></label><label>{t('notes')}<textarea value={f.keterangan} onChange={e=>setF({...f,keterangan:e.target.value})}/></label></SimpleModal>}
  </Branch>
 }
