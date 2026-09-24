@@ -473,6 +473,68 @@ export default function DashboardAdmin() {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
   const [dbPerms, setDbPerms] = useState<string[]>([]);
   const [sessionChecking, setSessionChecking] = useState(true);
+
+  // Terapkan tema tersimpan sejak Dashboard pertama kali dimuat.
+  // Settings tetap menangani editor/pilihan tema; effect ini memastikan
+  // tema juga aktif di seluruh Dashboard tanpa harus membuka Settings.
+  useEffect(() => {
+    const DEFAULT_GLOBAL_THEME = {
+      primary: '#101a33',
+      accent: '#d6ae58',
+      background: '#f6f7fb',
+      surface: '#ffffff',
+      text: '#172033',
+      border: '#d6ae58'
+    };
+
+    let theme = DEFAULT_GLOBAL_THEME;
+    const saved = localStorage.getItem('moonx-theme');
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        theme = {
+          ...DEFAULT_GLOBAL_THEME,
+          ...parsed
+        };
+      } catch {
+        theme = DEFAULT_GLOBAL_THEME;
+      }
+    }
+
+    const root = document.documentElement;
+
+    const vars: Record<string, string> = {
+      '--mx-primary': theme.primary,
+      '--mx-primary-contrast': '#ffffff',
+      '--mx-accent': theme.accent,
+      '--mx-background': theme.background,
+      '--mx-surface': theme.surface,
+      '--mx-surface-alt': theme.background,
+      '--mx-text': theme.text,
+      '--mx-text-secondary': '#667085',
+      '--mx-text-muted': '#98a2b3',
+      '--mx-control-bg': theme.surface,
+      '--mx-control-text': theme.text,
+      '--mx-control-border': theme.border,
+      '--mx-border': theme.border,
+      '--mx-border-strong': theme.accent,
+      '--mx-focus': theme.accent,
+      '--mx-blue': theme.primary,
+      '--mx-blue-soft': theme.background,
+      '--blue': theme.primary,
+      '--blue2': theme.primary,
+      '--blue-soft': theme.background,
+      '--ink': theme.text,
+      '--line': theme.border,
+      '--surface': theme.surface,
+      '--bg': theme.background
+    };
+
+    Object.entries(vars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+  }, []);
   const [roleOpen, setRoleOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
@@ -514,6 +576,8 @@ export default function DashboardAdmin() {
       items: [
         ['performance', t('performance'), 'arrow'] as [MenuKey, string, string],
         ['kpi', t('kpi_target'), 'kpi'] as [MenuKey, string, string],
+        ['recruitment-v25', t('recruitment_ats') || 'Rekrutmen', 'recruitment'] as [MenuKey, string, string],
+        ['candidates', t('candidates'), 'users'] as [MenuKey, string, string],
       ],
     },
     {
