@@ -485,18 +485,48 @@ export default function DashboardAdmin() {
         ['professional-suite', 'Professional Suite', 'kpi'] as [MenuKey, string, string],
         ['attendance', 'Absensi', 'clock'] as [MenuKey, string, string],
         ['reports', 'Laporan', 'report'] as [MenuKey, string, string],
-        ['feedback', 'Kotak Saran', 'request'] as [MenuKey, string, string]
-
-      ]
+        ['feedback', 'Kotak Saran', 'request'] as [MenuKey, string, string],
+      ],
     },
     {
-      title: 'TALENT',
+      title: 'PEOPLE',
+      items: [
+        ['employees', t('employees') || 'Semua Karyawan', 'users'] as [MenuKey, string, string],
+        ['id-card', 'ID Card', 'card'] as [MenuKey, string, string],
+        ['employee-360', 'Employee 360°', 'users'] as [MenuKey, string, string],
+        ['organization', 'Organisasi', 'org'] as [MenuKey, string, string],
+        ['hr-operations', 'HR Operations', 'settings'] as [MenuKey, string, string],
+      ],
+    },
+    {
+      title: t('payroll') || 'PAYROLL',
+      items: [
+        ['payroll', t('monthly_payroll'), 'payroll'] as [MenuKey, string, string],
+        ['production-hr', t('hr_transaction_center') || 'Pusat Transaksi HR', 'settings'] as [MenuKey, string, string],
+        ['payroll-production-v22', t('payroll_control') || 'Kontrol Payroll', 'payroll'] as [MenuKey, string, string],
+        ['payroll-components', t('salary_components'), 'components'] as [MenuKey, string, string],
+        ['payroll-overtime', t('overtime_payroll'), 'arrow'] as [MenuKey, string, string],
+        ['payslip', t('payslip'), 'calendar'] as [MenuKey, string, string],
+      ],
+    },
+    {
+      title: t('talent') || 'TALENTA',
       items: [
         ['performance', t('performance'), 'arrow'] as [MenuKey, string, string],
         ['kpi', t('kpi_target'), 'kpi'] as [MenuKey, string, string],
-      ]
+      ],
     },
-
+    {
+      title: t('system') || 'SYSTEM',
+      items: [
+        ['approvals', t('approvals'), 'check'] as [MenuKey, string, string],
+        ['notifications', t('notifications'), 'bell'] as [MenuKey, string, string],
+        ['system-health', t('system_health'), 'health'] as [MenuKey, string, string],
+        ['settings', t('settings') || 'Pengaturan', 'settings'] as [MenuKey, string, string],
+        ['roles', t('roles_permissions'), 'users'] as [MenuKey, string, string],
+        ['audit', t('audit_log'), 'request'] as [MenuKey, string, string],
+      ],
+    },
   ], [t]);
 
   const visibleMenuGroups = useMemo(() =>
@@ -1391,7 +1421,13 @@ function LeaveModule({initial}:{initial:MenuKey}){const {t}=useTranslation();
 function TalentModule({initial,employees}:{initial:MenuKey;employees:Karyawan[]}){const {t}=useTranslation();
  const [tab,setTab]=useState(initial==='kpi'?'kpi':initial==='recruitment'?'vacancies':initial==='candidates'?'candidates':'performance'),[rows,setRows]=useState<any[]>([]),[modal,setModal]=useState(false);
  const load=async()=>{const table=tab==='kpi'?'hris_kpi':tab==='vacancies'?'hris_lowongan':tab==='candidates'?'hris_kandidat':tab==='interviews'?'hris_interview':'hris_performance';const {data,error}=await supabase.from(table).select('*').order('created_at',{ascending:false});if(!error)setRows(data||[]);else setRows([])};useEffect(()=>{load()},[tab]);
- const items=[['performance',t('performance'),'arrow'],['kpi',t('kpi_target'),'kpi']].map(([key,label,icon])=>({key,label,icon}));
+ const items=[
+  ['performance',t('performance'),'arrow'],
+  ['kpi',t('kpi_target'),'kpi'],
+  ['vacancies',t('vacancies'),'recruitment'],
+  ['candidates',t('candidates'),'users'],
+  ['interviews',t('interviews'),'calendar']
+].map(([key,label,icon])=>({key,label,icon}));
  return <Branch title={t('talent')} desc={t('talent_desc')} items={items} tab={tab} setTab={setTab} action={`＋ ${t('add')}`} onAction={()=>setModal(true)}>{<TalentTable tab={tab} rows={rows}/>} {modal&&<TalentForm tab={tab} employees={employees} onClose={()=>setModal(false)} onSaved={()=>{setModal(false);load()}}/>}</Branch>
 
 }
