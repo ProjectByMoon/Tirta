@@ -22,6 +22,8 @@ import IDCardModule from '../employee/IDCardModule';
 import '../../../styles/admin/id-card.css';
 import { useTranslation } from '../../../locales/LanguageContext';
 import { appAlert, appConfirm, appPrompt } from '../../../lib/app-dialog';
+import AdminAnnouncementManager from '../../../features/announcements/AdminAnnouncementManager';
+import type { Announcement } from '../../../features/announcements/types';
 
 type Karyawan = {
   id: string;
@@ -72,7 +74,7 @@ type MenuKey =
   | 'schedule' | 'shift' | 'holiday' | 'leave-request' | 'leave-balance' | 'approvals'
   | 'payroll' | 'production-hr' | 'payroll-engine' | 'payroll-production-v22' | 'payroll-components' | 'payroll-overtime' | 'payslip'
   | 'performance' | 'kpi' | 'recruitment-v25' | 'recruitment' | 'candidates'
-  | 'reports' | 'settings' | 'roles' | 'audit' | 'notifications' | 'feedback' | 'system-health'
+  | 'reports' | 'settings' | 'roles' | 'audit' | 'notifications' | 'feedback' | 'announcements' | 'system-health'
   | 'professional-suite' | 'enterprise-v20' | 'security-v21' | 'payroll-indonesia-v23'
   | `enterprise-v${26 | 27 | 28 | 29 | 30 | 31 | 32 | 33 | 34 | 35}`;
 
@@ -129,7 +131,9 @@ const requiredPermission = (key: MenuKey) => {
 };
 
 const menuPermissionForRole = (key: MenuKey, role: string, dbPerms: string[] = []) => {
-  if (key === 'feedback') return ['Super Admin', 'Admin', 'HRD'].includes(role);
+  if (key === 'feedback' || key === 'announcements') {
+    return ['Super Admin', 'Admin', 'HRD'].includes(role);
+  }
   if (role === 'Super Admin' || requiredPermission(key) === '' || dbPerms.includes('*')) return true;
   const req = requiredPermission(key);
   if (key === 'approvals') return ['approval.read', 'leave.approve', 'overtime.approve', 'payroll.approve', 'recruitment.approve'].some(p => hasPermission(dbPerms, p, role) || hasPermission(rolePermissions[role] || [], p, role));
@@ -537,6 +541,49 @@ export default function DashboardAdmin() {
   }, []);
   const [roleOpen, setRoleOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [, setAnnouncementsLoading] = useState(false);
+
+  const loadAnnouncements = async () => {
+    if (!isSupabaseConfigured) return;
+
+    setAnnouncementsLoading(true);
+
+    const { data, error } = await supabase
+      .from('hris_announcements')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Gagal memuat pengumuman:', error);
+      setAnnouncementsLoading(false);
+      return;
+    }
+
+    setAnnouncements((data || []).map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      body: a.body,
+      category: a.category,
+      priority: a.priority,
+      status: a.status,
+      audience: a.audience || { type: 'all' },
+      pinned: !!a.pinned,
+      publishedAt: a.published_at || undefined,
+      expiresAt: a.expires_at || undefined,
+      attachmentCount: Number(a.attachment_count || 0),
+      imageUrl: a.image_url || undefined,
+      createdBy: a.created_by || undefined,
+      createdAt: a.created_at,
+      updatedAt: a.updated_at || undefined,
+    })));
+
+    setAnnouncementsLoading(false);
+  };
+
+  useEffect(() => {
+    void loadAnnouncements();
+  }, []);
 
   // 2. Deklarasi menuGroups
   const menuGroups = useMemo(() => [
@@ -548,6 +595,7 @@ export default function DashboardAdmin() {
         ['attendance', 'Absensi', 'clock'] as [MenuKey, string, string],
         ['reports', 'Laporan', 'report'] as [MenuKey, string, string],
         ['feedback', 'Kotak Saran', 'request'] as [MenuKey, string, string],
+        ['announcements', 'Pengumuman', 'bell'] as [MenuKey, string, string],
       ],
     },
     {
@@ -987,7 +1035,116 @@ return (
     {menu==='reports'&&<Reports employees={employees} attendance={attendance} onExport={exportCsv}/>}
     {menu==='settings'&&<Settings/>}{menu==='roles'&&<RoleEditorEnterprise userRole={userRole}/>} {menu==='audit'&&<Audit/>}{menu==='approvals'&&<ApprovalCenter/>}{menu==='notifications'&&<Notifications/>}
 {menu==='feedback'&&<FeedbackAdmin employees={employees}/>}
-{menu==='system-health'&&<SystemHealth/>}{menu==='enterprise-v20'&&<EnterpriseV20 employees={employees}/>}{menu==='security-v21'&&<SecurityCenterV21/>}  
+{menu==='announcements'&&<AdminAnnouncementManager
+      announcements={announcements}
+      onCreate={async (draft) => {
+        if (!isSupabaseConfigured) {
+          appAlert('Supabase belum dikonfigurasi.');
+          return;
+        }
+
+        const { data: authData } = await supabase.auth.getUser();
+
+        const { data, error } = await supabase
+          .from('hris_announcements')
+          .insert({
+            title: draft.title.trim(),
+            body: draft.body.trim(),
+            category: draft.category,
+            priority: draft.priority,
+            audience: draft.audience,
+            pinned: draft.pinned,
+            publish_at: draft.publishAt || null,
+            expires_at: draft.expiresAt || null,
+            attachment_count: 0,
+            created_by: authData.user?.id || null,
+            status: 'draft',
+          })
+          .select('*')
+          .single();
+
+        if (error) {
+          appAlert(`Gagal menyimpan draft: ${error.message}`);
+          return;
+        }
+
+        if (data) {
+          setAnnouncements((prev) => [{
+            id: data.id,
+            title: data.title,
+            body: data.body,
+            category: data.category,
+            priority: data.priority,
+            status: data.status,
+            audience: data.audience || { type: 'all' },
+            pinned: !!data.pinned,
+            publishedAt: data.published_at || undefined,
+            expiresAt: data.expires_at || undefined,
+            attachmentCount: Number(data.attachment_count || 0),
+            imageUrl: data.image_url || undefined,
+            createdBy: data.created_by || undefined,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at || undefined,
+          }, ...prev]);
+        }
+      }}
+      onTerbitkan={async (id) => {
+        const { data, error } = await supabase
+          .rpc('hris_announcement_publish', { p_id: id });
+
+        if (error) {
+          appAlert(`Gagal menerbitkan pengumuman: ${error.message}`);
+          return;
+        }
+
+        if (data) {
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row) {
+            setAnnouncements((prev) => prev.map((a) =>
+              a.id === id
+                ? {
+                    ...a,
+                    status: 'published',
+                    publishedAt: row.published_at || new Date().toISOString(),
+                    updatedAt: row.updated_at || new Date().toISOString(),
+                  }
+                : a
+            ));
+          }
+        } else {
+          await loadAnnouncements();
+        }
+      }}
+      onArchive={async (id) => {
+        const { data, error } = await supabase
+          .rpc('hris_announcement_archive', { p_id: id });
+
+        if (error) {
+          appAlert(`Gagal mengarsipkan pengumuman: ${error.message}`);
+          return;
+        }
+
+        if (data) {
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row) {
+            setAnnouncements((prev) => prev.map((a) =>
+              a.id === id
+                ? {
+                    ...a,
+                    status: 'archived',
+                    updatedAt: row.updated_at || new Date().toISOString(),
+                  }
+                : a
+            ));
+          }
+        } else {
+          await loadAnnouncements();
+        }
+      }}
+    />}
+    {menu==='system-health'&&<SystemHealth/>}
+    {menu==='enterprise-v20'&&<EnterpriseV20 employees={employees}/>}
+    {menu==='security-v21'&&<SecurityCenterV21/>}  
     {editing&&<EmployeeEditor employee={editing} onClose={()=>setEditing(null)} onSave={saveEdit}/>}
     {toast&&<button className="toast" onClick={()=>setToast('')}>{toast} ×</button>}
       </section>

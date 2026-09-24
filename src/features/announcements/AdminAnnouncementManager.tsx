@@ -10,8 +10,14 @@ export default function AdminAnnouncementManager({
 }: {
   announcements: Announcement[];
   onCreate?: (draft: {
-    title: string; body: string; category: AnnouncementCategory;
-    priority: AnnouncementPriority; audience: AnnouncementAudience; pinned: boolean;
+    title: string;
+    body: string;
+    category: AnnouncementCategory;
+    priority: AnnouncementPriority;
+    audience: AnnouncementAudience;
+    pinned: boolean;
+    publishAt?: string;
+    expiresAt?: string;
   }) => Promise<void> | void;
   onTerbitkan?: (id: string) => void;
   onArchive?: (id: string) => void;
