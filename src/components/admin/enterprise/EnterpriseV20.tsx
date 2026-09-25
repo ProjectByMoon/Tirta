@@ -31,7 +31,7 @@ const tabs=[
  const expiring=docs.filter(x=>{const d=x.tanggal_kadaluarsa||x.expiry_date;return d&&new Date(d).getTime()-Date.now()<1000*60*60*24*30}).length;
  const openCompliance=tasks.filter(x=>!['Selesai','Done','Closed'].includes(String(x.status||''))).length;
  const cap=roster.length; const reviewed=reviews.length;
- const approve=async(row:Row,decision:'Disetujui'|'Ditolak')=>{setMsg(''); const {error}=await supabase.rpc('hris_v20_decide_approval',{p_request_id:row.id,p_decision:decision,p_note:decision==='Ditolak'?'Ditolak dari Pusat Kendali Enterprise':'Disetujui dari Pusat Kendali Enterprise'}); if(error){setMsg(error.message);return} setMsg(`Approval ${decision.toLowerCase()}.`);load()};
+ const approve=async(row:Row,decision:'Disetujui'|'Ditolak')=>{setMsg(''); const {error}=await supabase.rpc('hris_decide_approval',{p_id:row.id,p_status:decision,p_catatan:decision==='Ditolak'?'Ditolak dari Pusat Kendali Enterprise':'Disetujui dari Pusat Kendali Enterprise'}); if(error){setMsg(error.message);return} setMsg(`Approval ${decision.toLowerCase()}.`);load()};
  return <div className="module-page">
   <div className="page-heading"><div><h1>{t('enterprise_control_center')}</h1><p>{t('enterprise_control_desc')}</p></div><button className="primary" onClick={load}>{loading?t('loading'):t('reload')}</button></div>
   <div className="branch-tabs">{tabs.map(([k,l,s])=><button key={k} className={tab===k?'active':''} onClick={()=>setTab(k)}><b>{l}</b><small>{s}</small></button>)}</div>

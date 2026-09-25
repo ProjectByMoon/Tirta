@@ -868,9 +868,6 @@ export default function DashboardAdmin() {
 
   const filtered = useMemo(() => employees.filter(k => `${k.nama} ${k.id_karyawan || ''} ${k.jabatan || ''} ${k.departemen || ''}`.toLowerCase().includes(search.toLowerCase())), [employees, search]);
   const filteredA = useMemo(() => attendance.filter(a => `${a.nama || ''} ${a.id_karyawan || ''} ${a.status || ''}`.toLowerCase().includes(search.toLowerCase())), [attendance, search]);
-  const today = attendance.filter(a => a.tanggal === isoToday());
-  const present = today.filter(a => ['Hadir', 'Tepat Waktu', 'Terlambat'].includes(a.status || '')).length;
-  const late = today.filter(a => (a.status || '').toLowerCase().includes('terlambat') || Number(a.keterlambatan_menit) > 0).length;
   const payroll = employees.reduce((s, k) => s + Number(k.gaji_pokok || 0), 0);
   const activeLabel = menuGroups.flatMap(g => g.items).find((x) => x[0] === menu)?.[1] || 'Overview';
   
@@ -1024,7 +1021,7 @@ return (
               </div>}
 
     <section className="page admin-page-frame">{loading&&<div className="loading">Memuat data…</div>}{error&&<div className="alert">{error}</div>}
-    {menu==='overview'&&<Overview employees={employees} attendance={attendance} present={present} late={late} payroll={payroll} onNavigate={navigate} profileName={profileName}/>}
+    {menu==='overview'&&<Overview employees={employees} attendance={attendance} payroll={payroll} onNavigate={navigate} profileName={profileName}/>}
     {menu==='professional-suite'&&<ProfessionalSuite employees={employees} attendance={attendance} onNavigate={navigate}/>}
     {menu==='id-card'&&<IDCardModule employees={employees} companyName="Project by Tirta" logoUrl={moonLogo}/> }
     {menu==='employees'&&<Employees data={filtered} onDelete={removeEmployee} onEdit={setEditing} onExport={(columns, format)=>format==='excel' ? exportExcel(employees as any,'database-karyawan.xls',columns) : exportCsv(employees as any,'database-karyawan.csv',columns)} onAdd={()=>navigate('employee-add')} onConfirmEmail={confirmEmployeeEmail}/> }
@@ -1195,14 +1192,44 @@ function Heading({
   );
 }
 
-function Overview({employees,attendance,present,late,payroll,onNavigate,profileName}:{employees:Karyawan[];attendance:Absensi[];present:number;late:number;payroll:number;onNavigate:(m:MenuKey)=>void;profileName:string}){
+function Overview({employees,attendance,payroll,onNavigate,profileName}:{employees:Karyawan[];attendance:Absensi[];payroll:number;onNavigate:(m:MenuKey)=>void;profileName:string}){
   const { t } = useTranslation();
  
- const active=employees.filter(k=>k.status_aktif!==false).length;
- const inactive=Math.max(0,employees.length-active);
- const absent=Math.max(0,employees.length-present-late);
- const attendanceRate=employees.length?Math.min(100,Math.round((present/Math.max(1,employees.length))*100)):0;
- const recent=attendance.slice(0,6);
+ const active = employees.filter(k => k.status_aktif !== false).length;
+ const inactive = Math.max(0, employees.length - active);
+
+ // Attendance hari ini: satu karyawan dihitung satu kali.
+ const todayAttendance = attendance.filter(a => a.tanggal === isoToday());
+ const attendanceByEmployee = new Map<string, Absensi>();
+
+ todayAttendance.forEach(a => {
+   const key = a.id_karyawan || a.nama || String(a.id || Math.random());
+   if (!attendanceByEmployee.has(key)) {
+     attendanceByEmployee.set(key, a);
+   }
+ });
+
+ const todayRows = Array.from(attendanceByEmployee.values());
+
+ const lateToday = todayRows.filter(a =>
+   (a.status || '').toLowerCase().includes('terlambat') ||
+   Number(a.keterlambatan_menit || 0) > 0
+ );
+
+ const presentToday = todayRows.filter(a =>
+   !lateToday.includes(a) &&
+   ['Hadir', 'Tepat Waktu'].includes(a.status || '')
+ );
+
+ const presentCount = presentToday.length;
+ const lateCount = lateToday.length;
+ const absentCount = Math.max(0, active - presentCount - lateCount);
+
+ const attendanceRate = active
+   ? Math.min(100, Math.round(((presentCount + lateCount) / active) * 100))
+   : 0;
+
+ const recent = attendance.slice(0,6);
  const dept=employees.reduce<Record<string,number>>((a,k)=>{const d=k.departemen||'Belum diatur';a[d]=(a[d]||0)+1;return a},{});
  const deptRows=Object.entries(dept).sort((a,b)=>b[1]-a[1]).slice(0,5);
  const maxDept=Math.max(1,...deptRows.map(x=>x[1]));
@@ -1214,7 +1241,7 @@ function Overview({employees,attendance,present,late,payroll,onNavigate,profileN
   </div>
   <div className="stat-grid executive-stats">
    <Stat title={t("total_employees")} value={String(employees.length)} hint={`${active} ${t("active")} · ${inactive} ${t("inactive")}`} icon="users"/>
-   <Stat title={t("attendance_today")} value={`${attendanceRate}%`} hint={`${present} ${t("present")} · ${late} ${t("late")}`} icon="check"/>
+   <Stat title={t("attendance_today")} value={`${attendanceRate}%`} hint={`${presentCount} ${t("present")} · ${lateCount} ${t("late")}`} icon="check"/>
    <Stat title={t("total_basic_salary")} value={money(payroll)} hint={t("from_active_employee_master")} icon="payroll"/>
    <Stat title={t("attendance_data")} value={String(attendance.length)} hint={t("data_saved")} icon="clock"/>
   </div>
@@ -1226,7 +1253,7 @@ function Overview({employees,attendance,present,late,payroll,onNavigate,profileN
    <div className="panel attendance-health">
     <div className="panel-head"><div><span className="eyebrow">{t("today")}</span><h2>{t("attendance_status")}</h2><p>{t("attendance_status_today")}</p></div></div>
     <div className="health-ring" style={{'--rate':`${attendanceRate*3.6}deg`} as CSSProperties}><div><strong>{attendanceRate}%</strong><small>{t("present")}</small></div></div>
-    <div className="health-legend"><div><i className="dot present"/><span>{t("present")}</span><b>{present}</b></div><div><i className="dot late"/><span>{t("late")}</span><b>{late}</b></div><div><i className="dot absent"/><span>{t("not_recorded")}</span><b>{absent}</b></div></div>
+    <div className="health-legend"><div><i className="dot present"/><span>{t("present")}</span><b>{presentCount}</b></div><div><i className="dot late"/><span>{t("late")}</span><b>{lateCount}</b></div><div><i className="dot absent"/><span>{t("not_recorded")}</span><b>{absentCount}</b></div></div>
    </div>
   </div>
   <div className="dashboard-grid-bottom">
