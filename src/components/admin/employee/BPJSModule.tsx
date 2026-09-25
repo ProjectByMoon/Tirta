@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from '../../../locales/LanguageContext';
 import { supabase } from '../../../lib/supabase/client';
 
 type EmployeeBPJS = {
@@ -14,6 +15,7 @@ type EmployeeBPJS = {
 };
 
 export default function BPJSModule() {
+  const { t } = useTranslation();
   const [employees, setEmployees] = useState<EmployeeBPJS[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -81,23 +83,23 @@ export default function BPJSModule() {
     <div className="panel" style={{ padding: '24px' }}>
       <div className="page-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
-          <h2>Compliance & BPJS Karyawan</h2>
-          <p style={{ color: '#667085', fontSize: '13px' }}>Kelola dan pantau nomor kepesertaan BPJS Kesehatan & Ketenagakerjaan seluruh karyawan.</p>
+          <h2>{t('bpjs_compliance_title')}</h2>
+          <p style={{ color: '#667085', fontSize: '13px' }}>{t('bpjs_compliance_desc')}</p>
         </div>
       </div>
 
       {/* Ringkasan Statistik BPJS */}
       <div className="mini-kpi-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}>
         <div className="stat-card" style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #d8dee8' }}>
-          <span style={{ fontSize: '12px', color: '#667085' }}>Total Karyawan</span>
+          <span style={{ fontSize: '12px', color: '#667085' }}>{t('total_employees')}</span>
           <strong style={{ fontSize: '22px', display: 'block', marginTop: '4px' }}>{employees.length}</strong>
         </div>
         <div className="stat-card" style={{ padding: '16px', background: '#ecfdf3', borderRadius: '12px', border: '1px solid #abefc6' }}>
-          <span style={{ fontSize: '12px', color: '#087443' }}>Terdaftar BPJS Kesehatan</span>
+          <span style={{ fontSize: '12px', color: '#087443' }}>{t('bpjs_health_registered')}</span>
           <strong style={{ fontSize: '22px', display: 'block', marginTop: '4px', color: '#087443' }}>{totalKes} / {employees.length}</strong>
         </div>
         <div className="stat-card" style={{ padding: '16px', background: '#eff8ff', borderRadius: '12px', border: '1px solid #b2ddff' }}>
-          <span style={{ fontSize: '12px', color: '#175cd3' }}>Terdaftar BPJS Ketenagakerjaan</span>
+          <span style={{ fontSize: '12px', color: '#175cd3' }}>{t('bpjs_work_registered')}</span>
           <strong style={{ fontSize: '22px', display: 'block', marginTop: '4px', color: '#175cd3' }}>{totalKet} / {employees.length}</strong>
         </div>
       </div>
@@ -108,7 +110,7 @@ export default function BPJSModule() {
       <div style={{ marginBottom: '15px' }}>
         <input
           type="text"
-          placeholder="Cari nama karyawan, ID, atau departemen..."
+          placeholder={t("search_employee_id_department")}
           value={search}
           onChange={e => setSearch(e.target.value)}
           style={{ width: '100%', maxWidth: '380px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d8dee8', fontSize: '13px' }}
@@ -116,17 +118,17 @@ export default function BPJSModule() {
       </div>
 
       {loading ? (
-        <p style={{ textAlign: 'center', padding: '30px', color: '#667085' }}>Memuat data BPJS...</p>
+        <p style={{ textAlign: 'center', padding: '30px', color: '#667085' }}>{t('loading_bpjs')}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #d8dee8', textAlign: 'left' }}>
-                <th style={{ padding: '12px' }}>Karyawan</th>
-                <th style={{ padding: '12px' }}>Departemen / Jabatan</th>
-                <th style={{ padding: '12px' }}>No. BPJS Kesehatan</th>
-                <th style={{ padding: '12px' }}>No. BPJS Ketenagakerjaan</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Aksi</th>
+                <th style={{ padding: '12px' }}>{t('employee')}</th>
+                <th style={{ padding: '12px' }}>{t('department_position')}</th>
+                <th style={{ padding: '12px' }}>{t('bpjs_health_number')}</th>
+                <th style={{ padding: '12px' }}>{t('bpjs_work_number')}</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -151,7 +153,7 @@ export default function BPJSModule() {
                           type="text"
                           value={formValues.bpjs_kes}
                           onChange={e => setFormValues({ ...formValues, bpjs_kes: e.target.value })}
-                          placeholder="No. BPJS Kesehatan"
+                          placeholder={t("bpjs_health_number")}
                           style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #d8dee8', width: '100%' }}
                         />
                       ) : (
@@ -164,7 +166,7 @@ export default function BPJSModule() {
                           type="text"
                           value={formValues.bpjs_ket}
                           onChange={e => setFormValues({ ...formValues, bpjs_ket: e.target.value })}
-                          placeholder="No. BPJS Ketenagakerjaan"
+                          placeholder={t("bpjs_work_number")}
                           style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #d8dee8', width: '100%' }}
                         />
                       ) : (
@@ -174,11 +176,11 @@ export default function BPJSModule() {
                     <td style={{ padding: '12px', textAlign: 'right' }}>
                       {isEditing ? (
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button onClick={() => handleSave(emp.id)} className="primary" style={{ padding: '6px 12px', fontSize: '11px' }}>Simpan</button>
-                          <button onClick={() => setEditingId(null)} style={{ padding: '6px 12px', fontSize: '11px', background: '#eef2f7', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Batal</button>
+                          <button onClick={() => handleSave(emp.id)} className="primary" style={{ padding: '6px 12px', fontSize: '11px' }}>{t("save")}</button>
+                          <button onClick={() => setEditingId(null)} style={{ padding: '6px 12px', fontSize: '11px', background: '#eef2f7', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>{t("cancel")}</button>
                         </div>
                       ) : (
-                        <button onClick={() => handleEdit(emp)} style={{ padding: '6px 12px', fontSize: '11px', background: '#f8fafc', border: '1px solid #d8dee8', borderRadius: '6px', cursor: 'pointer' }}>Ubah BPJS</button>
+                        <button onClick={() => handleEdit(emp)} style={{ padding: '6px 12px', fontSize: '11px', background: '#f8fafc', border: '1px solid #d8dee8', borderRadius: '6px', cursor: 'pointer' }}>{t("edit_bpjs")}</button>
                       )}
                     </td>
                   </tr>
@@ -186,7 +188,7 @@ export default function BPJSModule() {
               })}
               {!filtered.length && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '24px', color: '#667085' }}>Tidak ada data karyawan ditemukan.</td>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '24px', color: '#667085' }}>{t('no_employees_found')}</td>
                 </tr>
               )}
             </tbody>

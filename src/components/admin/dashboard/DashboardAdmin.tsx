@@ -139,8 +139,17 @@ const requiredPermission = (key: MenuKey) => {
 };
 
 const menuPermissionForRole = (key: MenuKey, role: string, dbPerms: string[] = []) => {
-  if (key === 'feedback' || key === 'announcements') {
-    return ['Super Admin', 'Admin', 'HRD'].includes(role);
+  if (key === 'feedback') {
+    return role === 'Super Admin'
+      || dbPerms.includes('feedback.read')
+      || hasPermission(dbPerms, 'feedback.read', role)
+      || hasPermission(rolePermissions[role] || [], 'feedback.read', role);
+  }
+  if (key === 'announcements') {
+    return role === 'Super Admin'
+      || dbPerms.includes('announcements.read')
+      || hasPermission(dbPerms, 'announcements.read', role)
+      || hasPermission(rolePermissions[role] || [], 'announcements.read', role);
   }
   if (role === 'Super Admin' || requiredPermission(key) === '' || dbPerms.includes('*')) return true;
   const req = requiredPermission(key);

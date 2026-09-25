@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from '../../../locales/LanguageContext';
 import type { Karyawan } from './types';
 import { supabase } from '../../../lib/supabase/client';
 
@@ -97,6 +98,7 @@ function CardArtwork({ employee, side, companyName, logoUrl, photoOverride }: { 
 }
 
 export default function IDCardModule({ employees, companyName, logoUrl }: Props) {
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState(employees[0]?.id || '');
   const [side, setSide] = useState<'front' | 'back'>('front');
   const [query, setQuery] = useState('');
@@ -357,22 +359,22 @@ export default function IDCardModule({ employees, companyName, logoUrl }: Props)
 
   const toggleBatch = (id: string) => setSelectedBatch(v => v.includes(id) ? v.filter(x => x !== id) : [...v, id]);
 
-  if (!employee) return <div className="panel"><p>Belum ada data karyawan untuk dibuatkan ID Card.</p></div>;
+  if (!employee) return <div className="panel"><p>{t('no_employee_for_id_card')}</p></div>;
 
   return <div className="id-card-module">
-    <div className="page-heading"><div><h1>ID Card Karyawan</h1><p>Buat, pratinjau, unduh, dan cetak kartu identitas langsung dari database karyawan.</p></div><button className="primary" onClick={() => cetakCards(selectedBatch.length ? selectedBatch : [employee.id])}>🖨️ Cetak {selectedBatch.length ? `${selectedBatch.length} Kartu` : 'Kartu'}</button></div>
+    <div className="page-heading"><div><h1>{t('employee_id_card')}</h1><p>{t('id_card_desc')}</p></div><button className="primary" onClick={() => cetakCards(selectedBatch.length ? selectedBatch : [employee.id])}>🖨️ Cetak {selectedBatch.length ? `${selectedBatch.length} Kartu` : 'Kartu'}</button></div>
     <div className="id-card-toolbar">
-      <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Cari nama / ID karyawan..." />
+      <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('search_employee_id')} />
       <select value={selectedId} onChange={e => setSelectedId(e.target.value)}>{filtered.map(e => <option key={e.id} value={e.id}>{e.nama} — {safeId(e)}</option>)}</select>
-      <div className="side-switch"><button className={side === 'front' ? 'active' : ''} onClick={() => setSide('front')}>Depan</button><button className={side === 'back' ? 'active' : ''} onClick={() => setSide('back')}>Belakang</button></div>
+      <div className="side-switch"><button className={side === 'front' ? 'active' : ''} onClick={() => setSide('front')}>{t('front')}</button><button className={side === 'back' ? 'active' : ''} onClick={() => setSide('back')}>{t('back')}</button></div>
     </div>
     <div className="id-card-layout">
       <div className="id-card-pratinjau-panel panel" ref={cardRef}>
         <div className="id-card-pratinjau" dangerouslySetInnerHTML={{ __html: svg }} />
         <div className="id-card-actions"><button className="secondary" onClick={unduhPng}>⬇️ Unduh PNG</button><button className="secondary" onClick={unduhSvg}>⬇️ Unduh SVG</button><button className="primary" onClick={unduhPdf}>⬇️ Unduh PDF — Depan + Belakang</button><button className="primary" onClick={cetakCurrent}>🖨️ Cetak — Depan + Belakang</button></div>
-        <small className="id-card-note">Untuk PDF, pilih cetaker <b>Simpan sebagai PDF</b> pada dialog cetak browser. Tidak perlu mengubah data database.</small>
+        <small className="id-card-note">{t('pdf_instruction')}</small>
       </div>
-      <div className="panel id-card-list"><div className="id-list-head"><div><b>Pilih untuk Batch Cetak</b><small>{selectedBatch.length} karyawan dipilih</small></div><button className="link-btn" onClick={() => setSelectedBatch(filtered.map(e => e.id))}>Pilih Semua</button></div>{filtered.map(e => <label className="id-employee-row" key={e.id}><input type="checkbox" checked={selectedBatch.includes(e.id)} onChange={() => toggleBatch(e.id)} /><span className="id-avatar">{initials(e.nama)}</span><span><b>{e.nama}</b><small>{safeId(e)} · {e.jabatan || '-'}</small></span></label>)}</div>
+      <div className="panel id-card-list"><div className="id-list-head"><div><b>{t('select_batch_print')}</b><small>{selectedBatch.length} karyawan dipilih</small></div><button className="link-btn" onClick={() => setSelectedBatch(filtered.map(e => e.id))}>{t('select_all')}</button></div>{filtered.map(e => <label className="id-employee-row" key={e.id}><input type="checkbox" checked={selectedBatch.includes(e.id)} onChange={() => toggleBatch(e.id)} /><span className="id-avatar">{initials(e.nama)}</span><span><b>{e.nama}</b><small>{safeId(e)} · {e.jabatan || '-'}</small></span></label>)}</div>
     </div>
   </div>;
 }

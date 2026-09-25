@@ -115,10 +115,10 @@ export default function MasterData({
     <div style={styles.wrapper}>
       <div style={styles.header}>
         <div>
-          <div style={styles.eyebrow}>MASTER DATA HRIS</div>
+          <div style={styles.eyebrow}>{t("master_data_hris")}</div>
           <h1 style={styles.title}>{t("branch")} & {t("operational")}</h1>
           <p style={styles.subtitle}>
-            Kelola cabang, departemen, jabatan, shift, dan jadwal karyawan.
+            {t('master_data_desc')}
           </p>
         </div>
       </div>
@@ -318,7 +318,7 @@ function CabangModule() {
     <>
       <SectionHeader
         title={t("branch")}
-        description="Kelola seluruh lokasi/cabang perusahaan."
+        description={t("branch_description")}
         button="+ Tambah Cabang"
         onClick={openAdd}
       />
@@ -341,15 +341,15 @@ function CabangModule() {
               <th>{t("city")}</th>
               <th>{t("address")}</th>
               <th>{t("status")}</th>
-              <th style={{ width: 150 }}>Aksi</th>
+              <th style={{ width: 150 }}>{t('actions')}</th>
             </tr>
           </thead>
 
           <tbody>
             {loading ? (
-              <EmptyRow text="Memuat data..." colSpan={6} />
+              <EmptyRow text={t("loading_data")} colSpan={6} />
             ) : filtered.length === 0 ? (
-              <EmptyRow text="Belum ada data cabang." colSpan={6} />
+              <EmptyRow text={t("no_branch_data")} colSpan={6} />
             ) : (
               filtered.map((item) => (
                 <tr key={item.id}>
@@ -390,14 +390,14 @@ function CabangModule() {
               label={t("code")}
               value={form.kode}
               onChange={(v) => setForm({ ...form, kode: v })}
-              placeholder="Contoh: JKT01"
+              placeholder={t("example_branch_code")}
             />
 
             <Input
               label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
-              placeholder="Contoh: Jakarta"
+              placeholder={t("example_jakarta")}
               required
             />
 
@@ -405,14 +405,14 @@ function CabangModule() {
               label={t("city")}
               value={form.kota}
               onChange={(v) => setForm({ ...form, kota: v })}
-              placeholder="Contoh: Jakarta"
+              placeholder={t("example_jakarta")}
             />
 
             <Textarea
               label={t("address")}
               value={form.alamat}
               onChange={(v) => setForm({ ...form, alamat: v })}
-              placeholder="Alamat lengkap cabang"
+              placeholder={t("branch_address_placeholder")}
             />
 
             <Checkbox
@@ -546,8 +546,8 @@ function DepartemenModule() {
     <>
       <SectionHeader
         title={t("department")}
-        description="Kelola struktur departemen perusahaan."
-        button="+ Tambah Departemen"
+        description="{t('department_desc')}"
+        button={`+ ${t("add")} ${t("department")}`}
         onClick={openAdd}
       />
 
@@ -574,9 +574,9 @@ function DepartemenModule() {
 
           <tbody>
             {loading ? (
-              <EmptyRow text="Memuat data..." colSpan={5} />
+              <EmptyRow text={t("loading_data")} colSpan={5} />
             ) : filtered.length === 0 ? (
-              <EmptyRow text="Belum ada departemen." colSpan={5} />
+              <EmptyRow text={t("no_department_data")} colSpan={5} />
             ) : (
               filtered.map((item) => (
                 <tr key={item.id}>
@@ -615,24 +615,24 @@ function DepartemenModule() {
               label={t("code")}
               value={form.kode}
               onChange={(v) => setForm({ ...form, kode: v })}
-              placeholder="Contoh: WH"
+              placeholder={t("example_department_code")}
             />
 
             <Input
               label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
-              placeholder="Contoh: Warehouse"
+              placeholder={t("example_department_name")}
               required
             />
 
             <Input
-              label="Kepala Departemen"
+              label={t("department_head")}
               value={form.kepala_departemen}
               onChange={(v) =>
                 setForm({ ...form, kepala_departemen: v })
               }
-              placeholder="Nama kepala departemen"
+              placeholder={t("department_head_placeholder")}
             />
 
             <Select
@@ -781,8 +781,8 @@ function JabatanModule() {
     <>
       <SectionHeader
         title={t("position")}
-        description="Kelola jabatan dan level posisi karyawan."
-        button="+ Tambah Jabatan"
+        description="{t('position_desc')}"
+        button={`+ ${t("add")} ${t("position")}`}
         onClick={openAdd}
       />
 
@@ -810,9 +810,9 @@ function JabatanModule() {
 
           <tbody>
             {loading ? (
-              <EmptyRow text="Memuat data..." colSpan={6} />
+              <EmptyRow text={t("loading_data")} colSpan={6} />
             ) : filtered.length === 0 ? (
-              <EmptyRow text="Belum ada jabatan." colSpan={6} />
+              <EmptyRow text={t("no_position_data")} colSpan={6} />
             ) : (
               filtered.map((item) => (
                 <tr key={item.id}>
@@ -853,14 +853,14 @@ function JabatanModule() {
               label={t("code")}
               value={form.kode}
               onChange={(v) => setForm({ ...form, kode: v })}
-              placeholder="Contoh: SPV-WH"
+              placeholder={t("example_position_code")}
             />
 
             <Input
               label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
-              placeholder="Contoh: Supervisor Warehouse"
+              placeholder={t("example_position_name")}
               required
             />
 
@@ -880,7 +880,7 @@ function JabatanModule() {
               onChange={(v) =>
                 setForm({ ...form, level_jabatan: v })
               }
-              placeholder="Contoh: Staff / Supervisor / Manager"
+              placeholder={t("position_level_placeholder")}
             />
 
             <Select
@@ -1042,9 +1042,9 @@ function ShiftModule() {
 
       <div style={styles.shiftGrid}>
         {loading ? (
-          <div style={styles.loadingBox}>Memuat shift...</div>
+          <div style={styles.loadingBox}>{t('loading_shift')}</div>
         ) : filtered.length === 0 ? (
-          <div style={styles.loadingBox}>Belum ada shift.</div>
+          <div style={styles.loadingBox}>{t('no_shift_data')}</div>
         ) : (
           filtered.map((item) => (
             <div style={styles.shiftCard} key={item.id}>
@@ -1059,25 +1059,25 @@ function ShiftModule() {
 
               <div style={styles.timeBox}>
                 <div>
-                  <span style={styles.miniLabel}>MASUK</span>
+                  <span style={styles.miniLabel}>{t('check_in')}</span>
                   <strong>{formatTime(item.jam_masuk)}</strong>
                 </div>
 
                 <div style={styles.arrow}>→</div>
 
                 <div>
-                  <span style={styles.miniLabel}>PULANG</span>
+                  <span style={styles.miniLabel}>{t('check_out')}</span>
                   <strong>{formatTime(item.jam_pulang)}</strong>
                 </div>
               </div>
 
               <div style={styles.shiftInfo}>
-                <span>Istirahat</span>
+                <span>{t('break')}</span>
                 <strong>{item.istirahat_menit || 0} menit</strong>
               </div>
 
               <div style={styles.shiftInfo}>
-                <span>Toleransi</span>
+                <span>{t('tolerance')}</span>
                 <strong>{item.toleransi_menit || 0} menit</strong>
               </div>
 
@@ -1113,7 +1113,7 @@ function ShiftModule() {
               label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
-              placeholder="Contoh: Shift Pagi"
+              placeholder={t("example_shift_name")}
               required
             />
 
@@ -1427,10 +1427,10 @@ function JadwalModule() {
 
           <tbody>
             {loading ? (
-              <EmptyRow text="Memuat jadwal..." colSpan={8} />
+              <EmptyRow text={t("loading_schedule")} colSpan={8} />
             ) : filtered.length === 0 ? (
               <EmptyRow
-                text="Belum ada jadwal."
+                text={t("no_schedule")}
                 colSpan={8}
               />
             ) : (
@@ -1498,11 +1498,12 @@ function JadwalModule() {
                 value: item.id_karyawan,
                 label: `${item.id_karyawan} — ${item.nama}`,
               }))}
+              emptyLabel={t("select_employee")}
             />
 
             <div style={styles.formRow}>
               <div style={{ flex: 1 }}>
-                <label style={styles.label}>Tanggal</label>
+                <label style={styles.label}>{t("date")}</label>
 
                 <input
                   type="date"
@@ -1570,7 +1571,7 @@ function JadwalModule() {
                   catatan: v,
                 })
               }
-              placeholder="Catatan jadwal..."
+              placeholder={t("schedule_note_placeholder")}
             />
 
             <FormActions onCancel={() => setModal(false)} />
@@ -1840,6 +1841,7 @@ function SelectWithLabels({
   value,
   onChange,
   options,
+  emptyLabel = 'Pilih karyawan...',
 }: {
   label: string;
   value: string;
@@ -1848,6 +1850,7 @@ function SelectWithLabels({
     value: string;
     label: string;
   }>;
+  emptyLabel?: string;
 }) {
   return (
     <div style={styles.field}>
@@ -1859,7 +1862,7 @@ function SelectWithLabels({
         onChange={(e) => onChange(e.target.value)}
         required
       >
-        <option value="">Pilih karyawan...</option>
+        <option value="">{emptyLabel}</option>
 
         {options.map((option) => (
           <option
