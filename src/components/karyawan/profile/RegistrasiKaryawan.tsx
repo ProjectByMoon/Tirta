@@ -203,9 +203,22 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         uploadedPhotoPath = `registration/${safeUuid}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('profile-photos')
-          .upload(uploadedPhotoPath, photoFile, { upsert: false, contentType: photoFile.type });
+        const { data: signedUpload, error: signedUploadError } =
+          await supabase.storage
+            .from('profile-photos')
+            .createSignedUploadUrl(uploadedPhotoPath, { upsert: false });
+
+        if (signedUploadError) throw signedUploadError;
+
+        const { error: uploadError } =
+          await supabase.storage
+            .from('profile-photos')
+            .uploadToSignedUrl(
+              uploadedPhotoPath,
+              signedUpload.token,
+              photoFile
+            );
+
         if (uploadError) throw uploadError;
       }
 
