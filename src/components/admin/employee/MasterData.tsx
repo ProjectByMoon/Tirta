@@ -104,6 +104,7 @@ export default function MasterData({
 }: {
   initialTab?: Tab;
 }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>(initialTab);
 
   useEffect(() => {
@@ -115,7 +116,7 @@ export default function MasterData({
       <div style={styles.header}>
         <div>
           <div style={styles.eyebrow}>MASTER DATA HRIS</div>
-          <h1 style={styles.title}>Cabang & Operasional</h1>
+          <h1 style={styles.title}>{t("branch")} & {t("operational")}</h1>
           <p style={styles.subtitle}>
             Kelola cabang, departemen, jabatan, shift, dan jadwal karyawan.
           </p>
@@ -126,35 +127,35 @@ export default function MasterData({
         <TabButton
           active={tab === 'cabang'}
           icon="building"
-          label="Cabang"
+          label={t("branch")}
           onClick={() => setTab('cabang')}
         />
 
         <TabButton
           active={tab === 'departemen'}
           icon="folder"
-          label="Departemen"
+          label={t("department")}
           onClick={() => setTab('departemen')}
         />
 
         <TabButton
           active={tab === 'jabatan'}
           icon="target"
-          label="Jabatan"
+          label={t("position")}
           onClick={() => setTab('jabatan')}
         />
 
         <TabButton
           active={tab === 'shift'}
           icon="shift"
-          label="Shift"
+          label={t("shift")}
           onClick={() => setTab('shift')}
         />
 
         <TabButton
           active={tab === 'jadwal'}
           icon="calendar"
-          label="Jadwal"
+          label={t("work_schedule")}
           onClick={() => setTab('jadwal')}
         />
       </div>
@@ -316,7 +317,7 @@ function CabangModule() {
   return (
     <>
       <SectionHeader
-        title="Cabang"
+        title={t("branch")}
         description="Kelola seluruh lokasi/cabang perusahaan."
         button="+ Tambah Cabang"
         onClick={openAdd}
@@ -325,7 +326,7 @@ function CabangModule() {
       <div style={styles.toolbar}>
         <input
           style={styles.search}
-          placeholder="Cari kode, nama, atau kota..."
+          placeholder={t("search_data")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -335,11 +336,11 @@ function CabangModule() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th>Kode</th>
-              <th>Nama Cabang</th>
-              <th>Kota</th>
-              <th>Alamat</th>
-              <th>Status</th>
+              <th>{t("code")}</th>
+              <th>{t("name")}</th>
+              <th>{t("city")}</th>
+              <th>{t("address")}</th>
+              <th>{t("status")}</th>
               <th style={{ width: 150 }}>Aksi</th>
             </tr>
           </thead>
@@ -381,19 +382,19 @@ function CabangModule() {
 
       {modal && (
         <Modal
-          title={editing ? 'Edit Cabang' : 'Tambah Cabang'}
+          title={editing ? `${t("edit")} ${t("branch")}` : `${t("add")} ${t("branch")}`}
           onClose={() => setModal(false)}
         >
           <form onSubmit={save}>
             <Input
-              label="Kode Cabang"
+              label={t("code")}
               value={form.kode}
               onChange={(v) => setForm({ ...form, kode: v })}
               placeholder="Contoh: JKT01"
             />
 
             <Input
-              label="Nama Cabang"
+              label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
               placeholder="Contoh: Jakarta"
@@ -401,21 +402,21 @@ function CabangModule() {
             />
 
             <Input
-              label="Kota"
+              label={t("city")}
               value={form.kota}
               onChange={(v) => setForm({ ...form, kota: v })}
               placeholder="Contoh: Jakarta"
             />
 
             <Textarea
-              label="Alamat"
+              label={t("address")}
               value={form.alamat}
               onChange={(v) => setForm({ ...form, alamat: v })}
               placeholder="Alamat lengkap cabang"
             />
 
             <Checkbox
-              label="Cabang aktif"
+              label={t("active_status")}
               checked={form.status_aktif}
               onChange={(v) => setForm({ ...form, status_aktif: v })}
             />
@@ -544,7 +545,7 @@ function DepartemenModule() {
   return (
     <>
       <SectionHeader
-        title="Departemen"
+        title={t("department")}
         description="Kelola struktur departemen perusahaan."
         button="+ Tambah Departemen"
         onClick={openAdd}
@@ -553,7 +554,7 @@ function DepartemenModule() {
       <div style={styles.toolbar}>
         <input
           style={styles.search}
-          placeholder="Cari departemen..."
+          placeholder={t("search_data")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -563,11 +564,11 @@ function DepartemenModule() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th>Kode</th>
-              <th>Departemen</th>
-              <th>Kepala Departemen</th>
-              <th>Status</th>
-              <th>Aksi</th>
+              <th>{t("code")}</th>
+              <th>{t("department")}</th>
+              <th>{t("department_head")}</th>
+              <th>{t("status")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
 
@@ -606,19 +607,19 @@ function DepartemenModule() {
 
       {modal && (
         <Modal
-          title={editing ? 'Edit Departemen' : 'Tambah Departemen'}
+          title={editing ? `${t("edit")} ${t("department")}` : `${t("add")} ${t("department")}`}
           onClose={() => setModal(false)}
         >
           <form onSubmit={save}>
             <Input
-              label="Kode"
+              label={t("code")}
               value={form.kode}
               onChange={(v) => setForm({ ...form, kode: v })}
               placeholder="Contoh: WH"
             />
 
             <Input
-              label="Nama Departemen"
+              label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
               placeholder="Contoh: Warehouse"
@@ -635,7 +636,7 @@ function DepartemenModule() {
             />
 
             <Select
-              label="Status"
+              label={t("status")}
               value={form.status}
               onChange={(v) => setForm({ ...form, status: v })}
               options={['Aktif', 'Nonaktif']}
@@ -779,7 +780,7 @@ function JabatanModule() {
   return (
     <>
       <SectionHeader
-        title="Jabatan"
+        title={t("position")}
         description="Kelola jabatan dan level posisi karyawan."
         button="+ Tambah Jabatan"
         onClick={openAdd}
@@ -788,7 +789,7 @@ function JabatanModule() {
       <div style={styles.toolbar}>
         <input
           style={styles.search}
-          placeholder="Cari jabatan..."
+          placeholder={t("search_data")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -798,12 +799,12 @@ function JabatanModule() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th>Kode</th>
-              <th>Jabatan</th>
-              <th>Departemen</th>
-              <th>Level</th>
-              <th>Status</th>
-              <th>Aksi</th>
+              <th>{t("code")}</th>
+              <th>{t("position")}</th>
+              <th>{t("department")}</th>
+              <th>{t("level")}</th>
+              <th>{t("status")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
 
@@ -844,19 +845,19 @@ function JabatanModule() {
 
       {modal && (
         <Modal
-          title={editing ? 'Edit Jabatan' : 'Tambah Jabatan'}
+          title={editing ? `${t("edit")} ${t("position")}` : `${t("add")} ${t("position")}`}
           onClose={() => setModal(false)}
         >
           <form onSubmit={save}>
             <Input
-              label="Kode Jabatan"
+              label={t("code")}
               value={form.kode}
               onChange={(v) => setForm({ ...form, kode: v })}
               placeholder="Contoh: SPV-WH"
             />
 
             <Input
-              label="Nama Jabatan"
+              label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
               placeholder="Contoh: Supervisor Warehouse"
@@ -864,7 +865,7 @@ function JabatanModule() {
             />
 
             <Select
-              label="Departemen"
+              label={t("department")}
               value={form.departemen}
               onChange={(v) => setForm({ ...form, departemen: v })}
               options={[
@@ -874,7 +875,7 @@ function JabatanModule() {
             />
 
             <Input
-              label="Level Jabatan"
+              label={t("position")}
               value={form.level_jabatan}
               onChange={(v) =>
                 setForm({ ...form, level_jabatan: v })
@@ -883,7 +884,7 @@ function JabatanModule() {
             />
 
             <Select
-              label="Status"
+              label={t("status")}
               value={form.status}
               onChange={(v) => setForm({ ...form, status: v })}
               options={['Aktif', 'Nonaktif']}
@@ -1024,7 +1025,7 @@ function ShiftModule() {
   return (
     <>
       <SectionHeader
-        title="Shift Kerja"
+        title={t("shift")}
         description="Atur jam kerja, istirahat, dan toleransi keterlambatan."
         button="+ Tambah Shift"
         onClick={openAdd}
@@ -1033,7 +1034,7 @@ function ShiftModule() {
       <div style={styles.toolbar}>
         <input
           style={styles.search}
-          placeholder="Cari shift..."
+          placeholder={t("search_data")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -1104,12 +1105,12 @@ function ShiftModule() {
 
       {modal && (
         <Modal
-          title={editing ? 'Edit Shift' : 'Tambah Shift'}
+          title={editing ? `${t("edit")} ${t("shift")}` : `${t("add")} ${t("shift")}`}
           onClose={() => setModal(false)}
         >
           <form onSubmit={save}>
             <Input
-              label="Nama Shift"
+              label={t("name")}
               value={form.nama}
               onChange={(v) => setForm({ ...form, nama: v })}
               placeholder="Contoh: Shift Pagi"
@@ -1118,7 +1119,7 @@ function ShiftModule() {
 
             <div style={styles.formRow}>
               <TimeInput
-                label="Jam Masuk"
+                label={t("start_date")}
                 value={form.jam_masuk}
                 onChange={(v) =>
                   setForm({ ...form, jam_masuk: v })
@@ -1126,7 +1127,7 @@ function ShiftModule() {
               />
 
               <TimeInput
-                label="Jam Pulang"
+                label={t("end_date")}
                 value={form.jam_pulang}
                 onChange={(v) =>
                   setForm({ ...form, jam_pulang: v })
@@ -1136,7 +1137,7 @@ function ShiftModule() {
 
             <div style={styles.formRow}>
               <NumberInput
-                label="Istirahat (menit)"
+                label={t("minutes")}
                 value={form.istirahat_menit}
                 onChange={(v) =>
                   setForm({
@@ -1147,7 +1148,7 @@ function ShiftModule() {
               />
 
               <NumberInput
-                label="Toleransi (menit)"
+                label={t("minutes")}
                 value={form.toleransi_menit}
                 onChange={(v) =>
                   setForm({
@@ -1159,7 +1160,7 @@ function ShiftModule() {
             </div>
 
             <Select
-              label="Status"
+              label={t("status")}
               value={form.status}
               onChange={(v) => setForm({ ...form, status: v })}
               options={['Aktif', 'Nonaktif']}
@@ -1377,7 +1378,7 @@ function JadwalModule() {
   return (
     <>
       <SectionHeader
-        title="Jadwal Karyawan"
+        title={t("work_schedule")}
         description="Atur jadwal kerja karyawan berdasarkan tanggal dan shift."
         button="+ Tambah Jadwal"
         onClick={openAdd}
@@ -1386,7 +1387,7 @@ function JadwalModule() {
       <div style={styles.toolbar}>
         <input
           style={styles.search}
-          placeholder="Cari nama atau ID karyawan..."
+          placeholder={t("search_data")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -1413,14 +1414,14 @@ function JadwalModule() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th>Tanggal</th>
-              <th>Karyawan</th>
-              <th>ID Karyawan</th>
-              <th>Shift</th>
-              <th>Jam</th>
-              <th>Status</th>
-              <th>Catatan</th>
-              <th>Aksi</th>
+              <th>{t("date")}</th>
+              <th>{t("employee")}</th>
+              <th>{t("employee_id")}</th>
+              <th>{t("shift")}</th>
+              <th>{t("time")}</th>
+              <th>{t("status")}</th>
+              <th>{t("notes")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
 
@@ -1483,12 +1484,12 @@ function JadwalModule() {
 
       {modal && (
         <Modal
-          title={editing ? 'Edit Jadwal' : 'Tambah Jadwal'}
+          title={editing ? `${t("edit")} ${t("work_schedule")}` : `${t("add")} ${t("work_schedule")}`}
           onClose={() => setModal(false)}
         >
           <form onSubmit={save}>
             <SelectWithLabels
-              label="Karyawan"
+              label={t("employee")}
               value={form.id_karyawan}
               onChange={(v) =>
                 setForm({ ...form, id_karyawan: v })
@@ -1519,7 +1520,7 @@ function JadwalModule() {
 
               <div style={{ flex: 1 }}>
                 <Select
-                  label="Shift"
+                  label={t("shift")}
                   value={form.shift_id}
                   onChange={(v) =>
                     setForm({
@@ -1541,7 +1542,7 @@ function JadwalModule() {
             </div>
 
             <Select
-              label="Status"
+              label={t("status")}
               value={form.status}
               onChange={(v) =>
                 setForm({
@@ -1561,7 +1562,7 @@ function JadwalModule() {
             />
 
             <Textarea
-              label="Catatan"
+              label={t("notes")}
               value={form.catatan}
               onChange={(v) =>
                 setForm({
