@@ -295,17 +295,17 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
           />
 
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            <option>Semua</option>
-            <option>Baru</option>
-            <option>Diproses</option>
-            <option>Selesai</option>
+            <option>{t('all')}</option>
+            <option>{t('new')}</option>
+            <option>{t('processing')}</option>
+            <option>{t('completed')}</option>
           </select>
 
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-            <option>Semua</option>
-            <option>Saran</option>
-            <option>Keluhan</option>
-            <option>Masukan</option>
+            <option>{t('all')}</option>
+            <option>{t('suggestion')}</option>
+            <option>{t('complaint')}</option>
+            <option>{t('feedback')}</option>
           </select>
         </div>
 
@@ -318,12 +318,12 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Karyawan</th>
-                  <th>Kategori</th>
-                  <th>Judul</th>
-                  <th>Status</th>
-                  <th>Tanggal</th>
-                  <th>Aksi</th>
+                  <th>{t('employee')}</th>
+                  <th>{t('category')}</th>
+                  <th>{t('title')}</th>
+                  <th>{t('status')}</th>
+                  <th>{t('date')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -397,14 +397,14 @@ function FeedbackAdmin({ employees }: { employees: Karyawan[] }) {
                   })
                 }
               >
-                <option>Baru</option>
-                <option>Diproses</option>
-                <option>Selesai</option>
+                <option>{t('new')}</option>
+                <option>{t('processing')}</option>
+                <option>{t('completed')}</option>
               </select>
             </label>
 
             <label className="feedback-field">
-              <strong>Tanggapan HR</strong>
+              <strong>{t('reply')}</strong>
               <textarea className="feedback-control feedback-textarea"
                 rows={5}
                 value={reply}
@@ -589,39 +589,39 @@ export default function DashboardAdmin() {
   // 2. Deklarasi menuGroups
   const menuGroups = useMemo(() => [
     {
-      title: 'UTAMA',
+      title: t('main'),
       items: [
-        ['overview', 'Beranda', 'home'] as [MenuKey, string, string],
-        ['professional-suite', 'Professional Suite', 'kpi'] as [MenuKey, string, string],
-        ['attendance', 'Absensi', 'clock'] as [MenuKey, string, string],
-        ['reports', 'Laporan', 'report'] as [MenuKey, string, string],
-        ['feedback', 'Kotak Saran', 'request'] as [MenuKey, string, string],
-        ['announcements', 'Pengumuman', 'bell'] as [MenuKey, string, string],
+        ['overview', t('home'), 'home'] as [MenuKey, string, string],
+        ['professional-suite', t('professional_operations'), 'kpi'] as [MenuKey, string, string],
+        ['attendance', t('attendance'), 'clock'] as [MenuKey, string, string],
+        ['reports', t('reports'), 'report'] as [MenuKey, string, string],
+        ['feedback', t('feedback_inbox'), 'request'] as [MenuKey, string, string],
+        ['announcements', t('announcements'), 'bell'] as [MenuKey, string, string],
       ],
     },
     {
-      title: 'PEOPLE',
+      title: t('people'),
       items: [
         ['employees', t('employees') || 'Semua Karyawan', 'users'] as [MenuKey, string, string],
-        ['id-card', 'ID Card', 'card'] as [MenuKey, string, string],
-        ['employee-360', 'Employee 360°', 'users'] as [MenuKey, string, string],
-        ['organization', 'Organisasi', 'org'] as [MenuKey, string, string],
-        ['hr-operations', 'HR Operations', 'settings'] as [MenuKey, string, string],
+        ['id-card', t('id_card'), 'card'] as [MenuKey, string, string],
+        ['employee-360', t('employee_360'), 'users'] as [MenuKey, string, string],
+        ['organization', t('organization'), 'org'] as [MenuKey, string, string],
+        ['hr-operations', t('hr_operations'), 'settings'] as [MenuKey, string, string],
       ],
     },
     {
       title: t('payroll') || 'PAYROLL',
       items: [
         ['payroll', t('monthly_payroll'), 'payroll'] as [MenuKey, string, string],
-        ['production-hr', t('hr_transaction_center') || 'Pusat Transaksi HR', 'settings'] as [MenuKey, string, string],
-        ['payroll-production-v22', t('payroll_control') || 'Kontrol Payroll', 'payroll'] as [MenuKey, string, string],
+        ['production-hr', t('hr_transaction_center'), 'settings'] as [MenuKey, string, string],
+        ['payroll-production-v22', t('payroll_control'), 'payroll'] as [MenuKey, string, string],
         ['payroll-components', t('salary_components'), 'components'] as [MenuKey, string, string],
         ['payroll-overtime', t('overtime_payroll'), 'arrow'] as [MenuKey, string, string],
         ['payslip', t('payslip'), 'calendar'] as [MenuKey, string, string],
       ],
     },
     {
-      title: t('talent') || 'TALENTA',
+      title: t('talent'),
       items: [
         ['performance', t('performance'), 'arrow'] as [MenuKey, string, string],
         ['kpi', t('kpi_target'), 'kpi'] as [MenuKey, string, string],
@@ -630,12 +630,12 @@ export default function DashboardAdmin() {
       ],
     },
     {
-      title: t('system') || 'SYSTEM',
+      title: t('system'),
       items: [
         ['approvals', t('approvals'), 'check'] as [MenuKey, string, string],
         ['notifications', t('notifications'), 'bell'] as [MenuKey, string, string],
         ['system-health', t('system_health'), 'health'] as [MenuKey, string, string],
-        ['settings', t('settings') || 'Pengaturan', 'settings'] as [MenuKey, string, string],
+        ['settings', t('settings'), 'settings'] as [MenuKey, string, string],
         ['roles', t('roles_permissions'), 'users'] as [MenuKey, string, string],
         ['audit', t('audit_log'), 'request'] as [MenuKey, string, string],
       ],
@@ -1155,7 +1155,8 @@ return (
 };
 
 function Login(p:{email:string;pin:string;setEmail:(v:string)=>void;setPin:(v:string)=>void;onSubmit:(e:FormEvent)=>void;error:string;loading:boolean}){
- return <div className="login-wrap"><div className="login-card"><div className="brand center"><div className="brand-mark"><img src={moonLogo} alt="Project by Tirta" /></div><div><b>Project by Tirta</b><small>People Platform</small></div></div><h1>Selamat datang kembali</h1><p>Masuk ke dashboard HR & payroll.</p><form onSubmit={p.onSubmit}><label>Email<input value={p.email} onChange={e=>p.setEmail(e.target.value)} required/></label><label>Password<input type="password" value={p.pin} onChange={e=>p.setPin(e.target.value)} required/></label>{p.error&&<div className="form-error">{p.error}</div>}<button className="primary full" disabled={p.loading}>{p.loading?'Memeriksa…':'Masuk ke Dashboard'}</button></form><small className="security-note">Gunakan email dan password Supabase Auth yang diberikan HR.</small></div></div>
+  const { t } = useTranslation();
+ return <div className="login-wrap"><div className="login-card"><div className="brand center"><div className="brand-mark"><img src={moonLogo} alt="Project by Tirta" /></div><div><b>Project by Tirta</b><small>People Platform</small></div></div><h1>{t('welcome_back')}</h1><p>{t('login_to_dashboard')}</p><form onSubmit={p.onSubmit}><label>Email<input value={p.email} onChange={e=>p.setEmail(e.target.value)} required/></label><label>Password<input type="password" value={p.pin} onChange={e=>p.setPin(e.target.value)} required/></label>{p.error&&<div className="form-error">{p.error}</div>}<button className="primary full" disabled={p.loading}>{p.loading ? t('checking') : t('login_to_dashboard_button')}</button></form><small className="security-note">{t('security_note')}</small></div></div>
 }
 
 function Heading({
@@ -1186,7 +1187,8 @@ function Heading({
 }
 
 function Overview({employees,attendance,present,late,payroll,onNavigate,profileName}:{employees:Karyawan[];attendance:Absensi[];present:number;late:number;payroll:number;onNavigate:(m:MenuKey)=>void;profileName:string}){
- const { t } = useTranslation();
+  const { t } = useTranslation();
+ 
  const active=employees.filter(k=>k.status_aktif!==false).length;
  const inactive=Math.max(0,employees.length-active);
  const absent=Math.max(0,employees.length-present-late);
@@ -1226,7 +1228,7 @@ function Overview({employees,attendance,present,late,payroll,onNavigate,profileN
 }
 function Stat({title,value,hint,icon}:{title:string;value:string;hint:string;icon:string}){return <div className="stat-card"><div className="stat-icon"><Icon name={icon}/></div><div><span>{title}</span><strong>{value}</strong><small>{hint}</small></div></div>}
 function Quick({label,icon,onClick}:{label:string;icon:string;onClick:()=>void}){return <button className="quick-action" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span>{label}<span aria-hidden="true">›</span></button>}
-function AttendanceMini({rows}:{rows:Absensi[]}){return <div className="table-wrap"><table><thead><tr><th>Karyawan</th><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Status</th></tr></thead><tbody>{rows.length?rows.map((a,i)=><tr key={a.id||i}><td><b>{a.nama||'-'}</b><small>{a.id_karyawan||''}</small></td><td>{a.tanggal||'-'}</td><td className="green">{a.jam_masuk||'-'}</td><td>{a.jam_pulang||'-'}</td><td><Status value={a.status||'Hadir'}/></td></tr>):<Empty cols={5}/>}</tbody></table></div>}
+function AttendanceMini({rows}:{rows:Absensi[]}){const { t } = useTranslation(); return <div className="table-wrap"><table><thead><tr><th>{t('employee')}</th><th>{t('date')}</th><th>{t('check_in')}</th><th>{t('check_out')}</th><th>{t('status')}</th></tr></thead><tbody>{rows.length?rows.map((a,i)=><tr key={a.id||i}><td><b>{a.nama||'-'}</b><small>{a.id_karyawan||''}</small></td><td>{a.tanggal||'-'}</td><td className="green">{a.jam_masuk||'-'}</td><td>{a.jam_pulang||'-'}</td><td><Status value={a.status||'Hadir'}/></td></tr>):<Empty cols={5}/>}</tbody></table></div>}
 
 function Employees({data,onDelete,onEdit,onExport,onAdd,onConfirmEmail}:{data:Karyawan[];onDelete:(k:Karyawan)=>void;onEdit:(k:Karyawan)=>void;onExport:(columns:string[],format:'csv'|'excel')=>void;onAdd:()=>void;onConfirmEmail:(k:Karyawan)=>void}){
   const { t } = useTranslation();
@@ -1470,8 +1472,8 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
       <aside className="edit-drawer">
         <div className="drawer-head">
           <div>
-            <span>EMPLOYEE PROFILE</span>
-            <h2>Edit Karyawan</h2>
+            <span>{t('employee_profile')}</span>
+            <h2>{t('edit_employee')}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} type="button">×</button>
         </div>
@@ -1564,7 +1566,7 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
           </label>
 
           <label className="switch-row">
-            <span>Status Aktif</span>
+            <span>{t('active_status')}</span>
             <input
               type="checkbox"
               checked={f.status_aktif}
@@ -1629,11 +1631,11 @@ function AttendanceModule({type,data,onRefresh,onExport}:{type:MenuKey;data:Abse
               <th>{t('date')}</th>
               <th>{t('check_in')}</th>
               <th>{t('check_out')}</th>
-              <th>Latitude</th>
-              <th>Longitude</th>
-              <th>Akurasi</th>
+              <th>{t('latitude')}</th>
+              <th>{t('longitude')}</th>
+              <th>{t('accuracy')}</th>
               <th>{t('status')}</th>
-              <th>Maps</th>
+              <th>{t('maps')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1750,7 +1752,7 @@ function LeaveModule({initial}:{initial:MenuKey}){const {t}=useTranslation();
  const save=async(e:FormEvent)=>{e.preventDefault();const {data,error}=await supabase.from('hris_cuti').insert({...f,jumlah_hari:Number(f.jumlah_hari)}).select('id').single();if(error){await appAlert(error.message);return}if(data){const a=await supabase.rpc('hris_submit_approval',{p_modul:'leave',p_record_id:String(data.id)});if(a.error){await supabase.from('hris_cuti').delete().eq('id',data.id);await appAlert(a.error.message);return}}setModal(false);load()};
  const update=async(id:string,status:string)=>{const {data:req,error:e1}=await supabase.from('hris_approval_requests').select('id').eq('modul','leave').eq('record_id',id).eq('status','Menunggu').maybeSingle();if(e1||!req){await appAlert(e1?.message||t('approval_workflow_not_found'));return}const {error}=await supabase.rpc('hris_decide_approval',{p_id:req.id,p_status:status,p_catatan:status==='Ditolak'?(await appPrompt(t('rejection_reason_prompt'),'')||null):null});if(error)await appAlert(error.message);else load()};
  const ensureBalance=async(k:string)=>{const found=balances.find(x=>x.id_karyawan===k);if(found)return found;const {data,error}=await supabase.from('hris_saldo_cuti').insert({id_karyawan:k,tahun:new Date().getFullYear(),jenis:'Tahunan',saldo:12,terpakai:0}).select().single();if(error) return null;return data};
- const items=[['inbox',t('approval_inbox')||'Approval Inbox','request'],['requests','Pengajuan Baru','＋'],['history',t('history')||'Riwayat','calendar'],['balance',t('leave_balance')||'Saldo Cuti','balance']].map(([key,label,icon])=>({key,label,icon}));
+ const items=[['inbox',t('approval_inbox'),'request'],['requests',t('new_request'),'＋'],['history',t('history'),'calendar'],['balance',t('leave_balance'),'balance']].map(([key,label,icon])=>({key,label,icon}));
  return <Branch title={t('leave')} desc={t('leave_desc')} items={items} tab={tab} setTab={setTab} action={tab==='requests'?'＋ Buat Pengajuan':undefined} onAction={()=>setModal(true)}>{tab==='balance'?<div className="panel table-panel"><div className="table-wrap"><table><thead><tr><th>{t('employee')}</th><th>{t('type')}</th><th>{t('quota')}</th><th>{t('used')}</th><th>{t('remaining')}</th><th>{t('actions')}</th></tr></thead><tbody>{employees.map(k=>{const b=balances.find(x=>x.id_karyawan===k.id_karyawan);const quota=Number((b?.saldo??12))+Number(b?.terpakai??0);const used=Number(b?.terpakai??0);return <tr key={k.id}><td><b>{k.nama}</b><small>{k.id_karyawan}</small></td><td>Tahunan</td><td>{quota}</td><td>{used}</td><td><Status value={String(Math.max(0,quota-used))}/></td><td><button className="link-btn" onClick={()=>k.id_karyawan && ensureBalance(k.id_karyawan).then(load)}>{t('initialize')}</button></td></tr>})}</tbody></table></div></div>:<div className="panel table-panel"><div className="table-wrap"><table><thead><tr><th>{t('employee')}</th><th>{t('type')}</th><th>{t('date')}</th><th>{t('reason')}</th><th>{t('status')}</th><th>{t('actions')}</th></tr></thead><tbody>{rows.length?rows.map(r=><tr key={r.id}><td>{r.id_karyawan}</td><td>{r.jenis}</td><td>{r.tanggal_mulai} s/d {r.tanggal_selesai}</td><td>{r.alasan||'-'}</td><td><Status value={r.status}/></td><td>{r.status==='Menunggu'&&<><button className="link-btn" onClick={()=>update(r.id,'Disetujui')}>{t('approve')}</button> <button className="danger-text" onClick={()=>update(r.id,'Ditolak')}>{t('reject')}</button></>}</td></tr>):<Empty cols={6}/>}</tbody></table></div></div>}{modal&&<SimpleModal title={t('leave_request')} onClose={()=>setModal(false)} onSave={save}><label>{t('employee')}<select required value={f.id_karyawan} onChange={e=>setF({...f,id_karyawan:e.target.value})}><option value="">{t('select_employee')}</option>{employees.map(k=><option key={k.id_karyawan} value={k.id_karyawan}>{k.nama} — {k.id_karyawan}</option>)}</select></label><label>{t('type')}<select value={f.jenis} onChange={e=>setF({...f,jenis:e.target.value})}><option>Tahunan</option><option>Sakit</option><option>Khusus</option></select></label><label>{t('start_date')}<input type="date" value={f.tanggal_mulai} onChange={e=>setF({...f,tanggal_mulai:e.target.value})}/></label><label>{t('end_date')}<input type="date" value={f.tanggal_selesai} onChange={e=>setF({...f,tanggal_selesai:e.target.value})}/></label><label>{t('days')}<input type="number" min="0.5" step="0.5" value={f.jumlah_hari} onChange={e=>setF({...f,jumlah_hari:e.target.value})}/></label><label>{t('reason')}<textarea value={f.alasan} onChange={e=>setF({...f,alasan:e.target.value})}/></label></SimpleModal>}</Branch>
 }
 
@@ -1777,6 +1779,7 @@ function TalentForm({tab,employees,onClose,onSaved}:{tab:string;employees:Karyaw
 function Reports({employees,attendance,onExport}:{employees:Karyawan[];attendance:Absensi[];onExport:(r:any[],f:string)=>void}){const {t}=useTranslation();const [tab,setTab]=useState('overview'),[payroll,setPayroll]=useState<any[]>([]);useEffect(()=>{if(tab==='payroll')supabase.from('hris_payroll').select('*').order('created_at',{ascending:false}).limit(2000).then(({data})=>setPayroll(data||[]))},[tab]);const items=[['overview',t('analytics'),'report'],['attendance',t('attendance_report'),'clock'],['payroll',t('payroll_report'),'payroll'],['people',t('employee_report'),'users']].map(([key,label,icon])=>({key,label,icon}));return <Branch title={t('reports')} desc={t('reports_desc')} items={items} tab={tab} setTab={setTab}>{tab==='overview'?<div className="report-grid"><ReportCard name={t('master_employees')} count={employees.length} onClick={()=>onExport(employees,'laporan-karyawan.csv')}/><ReportCard name={t('attendance')} count={attendance.length} onClick={()=>onExport(attendance,'laporan-absensi.csv')}/><ReportCard name={t('payroll')} count={payroll.length} onClick={()=>onExport(payroll,'laporan-payroll.csv')}/></div>:tab==='attendance'?<ReportCard name={t('attendance_report')} count={attendance.length} onClick={()=>onExport(attendance,'laporan-absensi.csv')}/>:tab==='people'?<ReportCard name={t('employee_report')} count={employees.length} onClick={()=>onExport(employees,'laporan-karyawan.csv')}/>:<ReportCard name={t('payroll_report')} count={payroll.length} onClick={()=>onExport(payroll,'laporan-payroll.csv')}/>}</Branch>}
 function ReportCard({name,count,onClick}:{name:string;count:number;onClick:()=>void}){const {t}=useTranslation();return <div className="report-card"><span>{t('reports')||'LAPORAN'}</span><h3>{name}</h3><b>{count}</b><p>{t('data_available')||'data tersedia'}</p><button className="primary" onClick={onClick}>{t('export_csv')||'Export CSV'}</button></div>}
 function Settings(){
+  const { t } = useTranslation();
   const [f,setF]=useState<any>({
     company_name:'Project by Tirta',
     work_start:'07:00',
@@ -1810,6 +1813,11 @@ function Settings(){
     surface:string;
     text:string;
     border:string;
+    sidebar:string;
+    sidebarText:string;
+    sidebarMuted:string;
+    sidebarActive:string;
+    sidebarActiveText:string;
   };
 
   const DEFAULT_THEME: ThemeDefinition = {
@@ -1817,7 +1825,10 @@ function Settings(){
     name:'Project by Tirta — Navy Gold',
     description:'Tema utama enterprise Project by Tirta.',
     primary:'#101a33', accent:'#d6ae58', background:'#f6f7fb',
-    surface:'#ffffff', text:'#172033', border:'#d6ae58'
+    surface:'#ffffff', text:'#172033', border:'#d6ae58',
+    sidebar:'#101a33', sidebarText:'#ffffff',
+    sidebarMuted:'#cbd5e1', sidebarActive:'#d6ae58',
+    sidebarActiveText:'#101a33'
   };
 
   const [customTheme,setCustomTheme]=useState({
@@ -1826,17 +1837,32 @@ function Settings(){
     background:DEFAULT_THEME.background,
     surface:DEFAULT_THEME.surface,
     text:DEFAULT_THEME.text,
-    border:DEFAULT_THEME.border
+    border:DEFAULT_THEME.border,
+    sidebar:DEFAULT_THEME.sidebar,
+    sidebarText:DEFAULT_THEME.sidebarText,
+    sidebarMuted:DEFAULT_THEME.sidebarMuted,
+    sidebarActive:DEFAULT_THEME.sidebarActive,
+    sidebarActiveText:DEFAULT_THEME.sidebarActiveText
   });
   const [activeThemeId,setActiveThemeId]=useState('moon');
 
   const themes:ThemeDefinition[]=[
     DEFAULT_THEME,
-    {id:'blue',name:'Corporate Blue',description:'Tampilan profesional biru korporat.',primary:'#123b63',accent:'#2f80ed',background:'#f4f7fb',surface:'#ffffff',text:'#172033',border:'#b8cee5'},
-    {id:'green',name:'Professional Green',description:'Tema untuk operasional dan workforce.',primary:'#174d3b',accent:'#2e9d68',background:'#f4f8f6',surface:'#ffffff',text:'#172033',border:'#a9d7c0'},
-    {id:'purple',name:'Modern Purple',description:'Tema modern untuk HR dan talent.',primary:'#3b2a63',accent:'#7c3aed',background:'#f7f5fb',surface:'#ffffff',text:'#172033',border:'#c8b8e8'},
-    {id:'dark',name:'Dark Enterprise',description:'Mode gelap untuk penggunaan malam.',primary:'#0b132b',accent:'#d6ae58',background:'#101827',surface:'#172033',text:'#f8fafc',border:'#334155'},
-    {id:'light',name:'Light Enterprise',description:'Tampilan terang dan minimalis.',primary:'#1f2937',accent:'#2563eb',background:'#f8fafc',surface:'#ffffff',text:'#111827',border:'#dbe3ee'}
+    {id:'blue',name:'Corporate Blue',description:'Tampilan profesional biru korporat.',primary:'#123b63',accent:'#2f80ed',background:'#f4f7fb',surface:'#ffffff',text:'#172033',border:'#b8cee5',
+    sidebar:'#123b63',sidebarText:'#ffffff',sidebarMuted:'#dbeafe',
+    sidebarActive:'#2f80ed',sidebarActiveText:'#ffffff'},
+    {id:'green',name:'Professional Green',description:'Tema untuk operasional dan workforce.',primary:'#174d3b',accent:'#2e9d68',background:'#f4f8f6',surface:'#ffffff',text:'#172033',border:'#a9d7c0',
+    sidebar:'#174d3b',sidebarText:'#ffffff',sidebarMuted:'#d1fae5',
+    sidebarActive:'#2e9d68',sidebarActiveText:'#ffffff'},
+    {id:'purple',name:'Modern Purple',description:'Tema modern untuk HR dan talent.',primary:'#3b2a63',accent:'#7c3aed',background:'#f7f5fb',surface:'#ffffff',text:'#172033',border:'#c8b8e8',
+    sidebar:'#3b2a63',sidebarText:'#ffffff',sidebarMuted:'#ede9fe',
+    sidebarActive:'#7c3aed',sidebarActiveText:'#ffffff'},
+    {id:'dark',name:'Dark Enterprise',description:'Mode gelap untuk penggunaan malam.',primary:'#0b132b',accent:'#d6ae58',background:'#101827',surface:'#172033',text:'#f8fafc',border:'#334155',
+    sidebar:'#0b132b',sidebarText:'#f8fafc',sidebarMuted:'#cbd5e1',
+    sidebarActive:'#d6ae58',sidebarActiveText:'#0b132b'},
+    {id:'light',name:'Light Enterprise',description:'Tampilan terang dan minimalis.',primary:'#1f2937',accent:'#2563eb',background:'#f8fafc',surface:'#ffffff',text:'#111827',border:'#dbe3ee',
+    sidebar:'#1f2937',sidebarText:'#ffffff',sidebarMuted:'#d1d5db',
+    sidebarActive:'#2563eb',sidebarActiveText:'#ffffff'}
   ];
 
   const isHexColor=(value:string)=>/^#[0-9a-f]{6}$/i.test(value);
@@ -1851,7 +1877,12 @@ function Settings(){
       background:isHexColor(values.background)?values.background:DEFAULT_THEME.background,
       surface:isHexColor(values.surface)?values.surface:DEFAULT_THEME.surface,
       text:isHexColor(values.text)?values.text:DEFAULT_THEME.text,
-      border:isHexColor(values.border)?values.border:DEFAULT_THEME.border
+      border:isHexColor(values.border)?values.border:DEFAULT_THEME.border,
+      sidebar:isHexColor(values.sidebar)?values.sidebar:DEFAULT_THEME.sidebar,
+      sidebarText:isHexColor(values.sidebarText)?values.sidebarText:DEFAULT_THEME.sidebarText,
+      sidebarMuted:isHexColor(values.sidebarMuted)?values.sidebarMuted:DEFAULT_THEME.sidebarMuted,
+      sidebarActive:isHexColor(values.sidebarActive)?values.sidebarActive:DEFAULT_THEME.sidebarActive,
+      sidebarActiveText:isHexColor(values.sidebarActiveText)?values.sidebarActiveText:DEFAULT_THEME.sidebarActiveText
     };
   };
 
@@ -1903,9 +1934,18 @@ function Settings(){
       '--mx-text':getReadableText(theme.background,theme.text),
       '--mx-text-secondary':getReadableText(theme.surface,'#667085'),
       '--mx-text-muted':getReadableText(theme.surface,'#98a2b3'),
+                      '--muted':getReadableText(theme.background,'#667085'),
+                      '--green':getReadableText(theme.background,'#16845a'),
+                      '--red':getReadableText(theme.background,'#b42318'),
+                      '--orange':getReadableText(theme.background,'#b7791f'),
       '--mx-control-bg':theme.surface,
       '--mx-control-text':getReadableText(theme.surface,theme.text),
       '--mx-control-border':theme.border,
+      '--mx-sidebar':theme.sidebar,
+      '--mx-sidebar-text':getReadableText(theme.sidebar,theme.sidebarText),
+      '--mx-sidebar-muted':getReadableText(theme.sidebar,theme.sidebarMuted),
+      '--mx-sidebar-active':theme.sidebarActive,
+      '--mx-sidebar-active-text':getReadableText(theme.sidebarActive,theme.sidebarActiveText),
       '--mx-border':theme.border,
       '--mx-border-strong':theme.accent,
       '--mx-focus':theme.accent,
@@ -1924,7 +1964,19 @@ function Settings(){
       '--bg':theme.background
     };
     Object.entries(vars).forEach(([key,value])=>root.style.setProperty(key,value));
-    setCustomTheme({primary:theme.primary,accent:theme.accent,background:theme.background,surface:theme.surface,text:theme.text,border:theme.border});
+    setCustomTheme({
+      primary:theme.primary,
+      accent:theme.accent,
+      background:theme.background,
+      surface:theme.surface,
+      text:theme.text,
+      border:theme.border,
+      sidebar:theme.sidebar,
+      sidebarText:theme.sidebarText,
+      sidebarMuted:theme.sidebarMuted,
+      sidebarActive:theme.sidebarActive,
+      sidebarActiveText:theme.sidebarActiveText
+    });
     setActiveThemeId(theme.id);
     if(persist){
       localStorage.setItem('moonx-theme',JSON.stringify(theme));
@@ -2051,7 +2103,7 @@ function Settings(){
 
           <div className="theme-manager-header">
             <div>
-              <h2>Tampilan & Tema</h2>
+              <h2>{t('appearance_theme')}</h2>
               <p>
                 Pilih tampilan visual yang digunakan oleh HRIS Project by Tirta.
               </p>
@@ -2153,7 +2205,7 @@ function Settings(){
           <div className="custom-theme-panel">
 
             <div>
-              <h3>Tema Kustom</h3>
+              <h3>{t('custom_theme')}</h3>
               <p>
                 Gunakan warna pilihan Anda untuk tampilan HRIS.
               </p>
@@ -2346,6 +2398,7 @@ function Settings(){
   );
 }
 function Audit() {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -2588,12 +2641,12 @@ function Audit() {
           <table>
             <thead>
               <tr>
-                <th>Waktu</th>
-                <th>Pelaku</th>
-                <th>Aksi</th>
-                <th>Module</th>
-                <th>Entity</th>
-                <th>Perubahan</th>
+                <th>{t('time')}</th>
+                <th>{t('actor')}</th>
+                <th>{t('actions')}</th>
+                <th>{t('module')}</th>
+                <th>{t('entity')}</th>
+                <th>{t('change')}</th>
                 <th style={{ textAlign: 'center' }}>Detail</th>
               </tr>
             </thead>
@@ -2889,9 +2942,9 @@ function Audit() {
               <table>
                 <thead>
                   <tr>
-                    <th>Field</th>
-                    <th>OLD VALUE</th>
-                    <th>NEW VALUE</th>
+                    <th>{t('field')}</th>
+                    <th>{t('old_value')}</th>
+                    <th>{t('new_value')}</th>
                   </tr>
                 </thead>
 
