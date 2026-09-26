@@ -630,7 +630,7 @@ export default function DashboardAdmin() {
       // Global frame is intentionally fixed. Selected theme only changes page background.
       primary: '#0b1222',
       accent: '#d6ae58',
-      background: '#f6f7fb',
+      background: '#101827',
       surface: '#101827',
       text: '#e2e5ea',
       border: '#d6ae58',
@@ -641,8 +641,13 @@ export default function DashboardAdmin() {
       sidebarActiveText: '#0b1222'
     };
 
+    const isSuperAdmin =
+      userRole.trim().toLowerCase() === 'super admin';
+
     let theme = DEFAULT_GLOBAL_THEME;
-    const saved = localStorage.getItem('moonx-theme');
+    const saved = isSuperAdmin
+      ? localStorage.getItem('moonx-theme')
+      : null;
 
     if (saved) {
       try {
@@ -721,7 +726,7 @@ export default function DashboardAdmin() {
     Object.entries(vars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
-  }, []);
+  }, [userRole]);
   const [roleOpen, setRoleOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -964,18 +969,51 @@ export default function DashboardAdmin() {
     if (e) setError(e.message); else { setToast(t("employee_deleted")); refresh() }
   }
 
-  async function saveEdit(payload: Record<string, unknown>) {
-    if (!canWrite(dbPerms, 'people', userRole)) { setError('Anda tidak memiliki permission people.write.'); return }
-    if (!editing) return;
+  async function saveEdit(payload: Record<string, unknown>): Promise<boolean> {
+    if (!canWrite(dbPerms, 'people', userRole)) {
+      setError('Anda tidak memiliki permission people.write.');
+      return false;
+    }
+
+    if (!editing) return false;
+
     if (payload.id_karyawan !== undefined) {
       const nextId = String(payload.id_karyawan || '').trim().toUpperCase();
-      if (!nextId) { setError('ID Karyawan wajib diisi.'); return; }
-      const { data: duplicate } = await supabase.from('karyawan').select('id').eq('id_karyawan', nextId).neq('id', editing.id).maybeSingle();
-      if (duplicate) { setError(`ID Karyawan ${nextId} sudah digunakan.`); return; }
+
+      if (!nextId) {
+        setError('ID Karyawan wajib diisi.');
+        return false;
+      }
+
+      const { data: duplicate } = await supabase
+        .from('karyawan')
+        .select('id')
+        .eq('id_karyawan', nextId)
+        .neq('id', editing.id)
+        .maybeSingle();
+
+      if (duplicate) {
+        setError(`ID Karyawan ${nextId} sudah digunakan.`);
+        return false;
+      }
+
       payload.id_karyawan = nextId;
     }
-    const { error: e } = await supabase.from('karyawan').update(payload).eq('id', editing.id);
-    if (e) setError(e.message); else { setEditing(null); setToast(t("employee_saved")); refresh() }
+
+    const { error: e } = await supabase
+      .from('karyawan')
+      .update(payload)
+      .eq('id', editing.id);
+
+    if (e) {
+      setError(e.message);
+      return false;
+    }
+
+    setEditing(null);
+    setToast(t("employee_saved"));
+    refresh();
+    return true;
   }
 
   const payroll = employees.reduce((s, k) => s + Number(k.gaji_pokok || 0), 0);
@@ -1341,7 +1379,7 @@ return (
     {['performance','kpi'].includes(menu)&&<TalentModule key={menu} initial={menu} employees={employees}/>} {menu==='recruitment-v25'&&<RecruitmentATSv25/>} {menu.startsWith('enterprise-v')&&menu!=='enterprise-v20'&&<EnterpriseRoadmapV26V35 version={menu.replace('enterprise-','') as any}/>} {['recruitment','candidates'].includes(menu)&&<RecruitmentEnterprise/>}
 
     {menu==='reports'&&<Reports employees={employees} attendance={attendance} onExport={exportCsv}/>}
-    {menu==='settings'&&<Settings/>}{menu==='roles'&&<RoleEditorEnterprise userRole={userRole}/>} {menu==='audit'&&<Audit/>}{menu==='approvals'&&<ApprovalCenter/>}{menu==='notifications'&&<Notifications/>}
+    {menu==='settings'&&<Settings canManageThemes={userRole.trim().toLowerCase()==='super admin'}/>} {menu==='roles'&&<RoleEditorEnterprise userRole={userRole}/>} {menu==='audit'&&<Audit/>}{menu==='approvals'&&<ApprovalCenter/>}{menu==='notifications'&&<Notifications/>}
 {menu==='feedback'&&<FeedbackAdmin employees={employees}/>}
 {menu==='announcements'&&<AdminAnnouncementManager
       announcements={announcements}
@@ -1835,8 +1873,17 @@ function AddEmployee({onDone,refresh}:{onDone:()=>void;refresh:()=>void}) {
   </>
 }
 
-function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
+function EmployeeEditor({
+  employee,
+  onClose,
+  onSave,
+}: {
+  employee: Karyawan;
+  onClose: () => void;
+  onSave: (p: Record<string, unknown>) => Promise<boolean> | boolean;
+}) {
   const { t } = useTranslation();
+
   const [f, setF] = useState({
     nik_ktp: employee.nik_ktp || '',
     id_karyawan: employee.id_karyawan || '',
@@ -1859,64 +1906,426 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
     status_aktif: employee.status_aktif !== false
   });
 
-  const setField=(key:string,value:string|boolean)=>{
-    setF(prev=>({...prev,[key]:value}));
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const setField = (key: string, value: string | boolean) => {
+    setF(prev => ({ ...prev, [key]: value }));
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCurrentPhoto = async () => {
+      const photo = employee.foto_url || '';
+
+      if (!photo) {
+        setPhotoPreview('');
+        return;
+      }
+
+      if (
+        /^https?:\/\//i.test(photo) ||
+        /^data:image\//i.test(photo) ||
+        /^blob:/i.test(photo) ||
+        /^\//.test(photo)
+      ) {
+        setPhotoPreview(photo);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.storage
+          .from('profile-photos')
+          .createSignedUrl(photo, 900);
+
+        if (!cancelled) {
+          setPhotoPreview(error || !data?.signedUrl ? '' : data.signedUrl);
+        }
+      } catch {
+        if (!cancelled) setPhotoPreview('');
+      }
+    };
+
+    void loadCurrentPhoto();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [employee.id, employee.foto_url]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
+
+  const handlePhotoChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      void appAlert('File foto harus berupa gambar.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      void appAlert('Ukuran foto maksimal 2 MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const isStoragePath = (value: string) =>
+    Boolean(value) &&
+    !/^https?:\/\//i.test(value) &&
+    !/^data:image\//i.test(value) &&
+    !/^blob:/i.test(value) &&
+    !/^\//.test(value);
+
+  const save = async () => {
+    if (!f.id_karyawan.trim()) {
+      await appAlert(t('employee_id_required'));
+      return;
+    }
+
+    setSaving(true);
+
+    let uploadedPhotoPath = '';
+
+    try {
+      const payload: Record<string, unknown> = {
+        ...f,
+        id_karyawan: f.id_karyawan.trim().toUpperCase(),
+        gaji_pokok: Number(f.gaji_pokok || 0),
+      };
+
+      const oldPhotoPath = employee.foto_url || '';
+
+      if (photoFile) {
+        const ext =
+          photoFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+
+        const safeUuid =
+          typeof crypto !== 'undefined' &&
+          typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+        uploadedPhotoPath = `avatars/employee-${safeUuid}.${ext}`;
+
+        const { data: signedUpload, error: signedUploadError } =
+          await supabase.storage
+            .from('profile-photos')
+            .createSignedUploadUrl(uploadedPhotoPath, { upsert: false });
+
+        if (signedUploadError) {
+          throw signedUploadError;
+        }
+
+        const { error: uploadError } =
+          await supabase.storage
+            .from('profile-photos')
+            .uploadToSignedUrl(
+              uploadedPhotoPath,
+              signedUpload.token,
+              photoFile
+            );
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        payload.foto_url = uploadedPhotoPath;
+      }
+
+      const saved = await onSave(payload);
+
+      if (!saved) {
+        if (uploadedPhotoPath) {
+          await supabase.storage
+            .from('profile-photos')
+            .remove([uploadedPhotoPath])
+            .catch(() => undefined);
+        }
+
+        return;
+      }
+
+      // Hapus foto lama hanya setelah DB berhasil menunjuk ke foto baru.
+      if (
+        uploadedPhotoPath &&
+        oldPhotoPath &&
+        oldPhotoPath !== uploadedPhotoPath &&
+        isStoragePath(oldPhotoPath)
+      ) {
+        await supabase.storage
+          .from('profile-photos')
+          .remove([oldPhotoPath])
+          .catch(error => {
+            console.warn('Foto lama tidak berhasil dihapus:', error);
+          });
+      }
+    } catch (error: any) {
+      if (uploadedPhotoPath) {
+        await supabase.storage
+          .from('profile-photos')
+          .remove([uploadedPhotoPath])
+          .catch(() => undefined);
+      }
+
+      await appAlert(
+        `Gagal mengganti foto karyawan:
+${error?.message || 'Terjadi kesalahan.'}`
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="drawer-backdrop" onMouseDown={e => { if (e.currentTarget === e.target) onClose(); }}>
+    <div
+      className="drawer-backdrop"
+      onMouseDown={e => {
+        if (e.currentTarget === e.target && !saving) {
+          onClose();
+        }
+      }}
+    >
       <aside className="edit-drawer">
         <div className="drawer-head">
           <div>
             <span>{t('employee_profile')}</span>
             <h2>{t('edit_employee')}</h2>
           </div>
-          <button className="icon-btn" onClick={onClose} type="button">×</button>
+
+          <button
+            className="icon-btn"
+            onClick={onClose}
+            type="button"
+            disabled={saving}
+          >
+            ×
+          </button>
         </div>
 
         <div className="drawer-body">
-          <label>NIK KTP
-            <input value={f.nik_ktp} onChange={e=>setField('nik_ktp',e.target.value)} />
+
+          {/* FOTO KARYAWAN */}
+          <div
+            style={{
+              marginBottom: 20,
+              padding: 14,
+              border: '1px solid #d0d5dd',
+              borderRadius: 14,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+              }}
+            >
+              <div
+                style={{
+                  width: 110,
+                  height: 135,
+                  flexShrink: 0,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  background: '#eef2f7',
+                  border: '2px solid #d6ae58',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt={`Foto ${employee.nama}`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      fontSize: 38,
+                      fontWeight: 700,
+                      color: '#667085',
+                    }}
+                  >
+                    {employee.nama?.[0] || 'K'}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <strong
+                  style={{
+                    display: 'block',
+                    marginBottom: 6,
+                  }}
+                >
+                  Foto Karyawan
+                </strong>
+
+                <small
+                  style={{
+                    display: 'block',
+                    color: '#667085',
+                    marginBottom: 10,
+                  }}
+                >
+                  JPG, PNG, atau WebP · maksimal 2 MB
+                </small>
+
+                <input
+                  id={`employee-photo-${employee.id}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoChange}
+                  disabled={saving}
+                  style={{ display: 'none' }}
+                />
+
+                <label
+                  htmlFor={`employee-photo-${employee.id}`}
+                  className="secondary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '9px 13px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {photoFile ? 'Ganti Foto Lagi' : 'Ganti Foto'}
+                </label>
+
+                {photoFile && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12,
+                      color: '#475467',
+                    }}
+                  >
+                    Foto baru siap diupload: {photoFile.name}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <label>
+            NIK KTP
+            <input
+              value={f.nik_ktp}
+              onChange={e => setField('nik_ktp', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>ID Karyawan
-            <input value={f.id_karyawan} onChange={e=>setField('id_karyawan',e.target.value)} />
+          <label>
+            ID Karyawan
+            <input
+              value={f.id_karyawan}
+              onChange={e => setField('id_karyawan', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Nama
-            <input value={f.nama} onChange={e=>setField('nama',e.target.value)} />
+          <label>
+            Nama
+            <input
+              value={f.nama}
+              onChange={e => setField('nama', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Tempat Lahir
-            <input value={f.tempat_lahir} onChange={e=>setField('tempat_lahir',e.target.value)} />
+          <label>
+            Tempat Lahir
+            <input
+              value={f.tempat_lahir}
+              onChange={e => setField('tempat_lahir', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Tanggal Lahir
-            <input type="date" value={f.tanggal_lahir} onChange={e=>setField('tanggal_lahir',e.target.value)} />
+          <label>
+            Tanggal Lahir
+            <input
+              type="date"
+              value={f.tanggal_lahir}
+              onChange={e => setField('tanggal_lahir', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Jenis Kelamin
-            <select value={f.jenis_kelamin} onChange={e=>setField('jenis_kelamin',e.target.value)}>
+          <label>
+            Jenis Kelamin
+            <select
+              value={f.jenis_kelamin}
+              onChange={e => setField('jenis_kelamin', e.target.value)}
+              disabled={saving}
+            >
               <option value="">Pilih Jenis Kelamin</option>
               <option value="Laki-laki">Laki-laki</option>
               <option value="Perempuan">Perempuan</option>
             </select>
           </label>
 
-          <label>Alamat
-            <input value={f.alamat_rumah} onChange={e=>setField('alamat_rumah',e.target.value)} />
+          <label>
+            Alamat
+            <input
+              value={f.alamat_rumah}
+              onChange={e => setField('alamat_rumah', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>No. Telepon
-            <input value={f.no_telp} onChange={e=>setField('no_telp',e.target.value)} />
+          <label>
+            No. Telepon
+            <input
+              value={f.no_telp}
+              onChange={e => setField('no_telp', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Email
-            <input type="email" value={f.email} onChange={e=>setField('email',e.target.value)} />
+          <label>
+            Email
+            <input
+              type="email"
+              value={f.email}
+              onChange={e => setField('email', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Status Pernikahan
-            <select value={f.status_pernikahan} onChange={e=>setField('status_pernikahan',e.target.value)}>
+          <label>
+            Status Pernikahan
+            <select
+              value={f.status_pernikahan}
+              onChange={e => setField('status_pernikahan', e.target.value)}
+              disabled={saving}
+            >
               <option value="">Pilih Status Pernikahan</option>
               <option value="Belum Menikah">Belum Menikah</option>
               <option value="Menikah">Menikah</option>
@@ -1924,20 +2333,40 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
             </select>
           </label>
 
-          <label>Nama Ibu Kandung
-            <input value={f.nama_ibu_kandung} onChange={e=>setField('nama_ibu_kandung',e.target.value)} />
+          <label>
+            Nama Ibu Kandung
+            <input
+              value={f.nama_ibu_kandung}
+              onChange={e => setField('nama_ibu_kandung', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Departemen
-            <input value={f.departemen} onChange={e=>setField('departemen',e.target.value)} />
+          <label>
+            Departemen
+            <input
+              value={f.departemen}
+              onChange={e => setField('departemen', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Jabatan
-            <input value={f.jabatan} onChange={e=>setField('jabatan',e.target.value)} />
+          <label>
+            Jabatan
+            <input
+              value={f.jabatan}
+              onChange={e => setField('jabatan', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Status Karyawan
-            <select value={f.status_karyawan} onChange={e=>setField('status_karyawan',e.target.value)}>
+          <label>
+            Status Karyawan
+            <select
+              value={f.status_karyawan}
+              onChange={e => setField('status_karyawan', e.target.value)}
+              disabled={saving}
+            >
               <option value="Tetap">Tetap</option>
               <option value="Kontrak">Kontrak</option>
               <option value="Harian">Harian</option>
@@ -1945,20 +2374,42 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
             </select>
           </label>
 
-          <label>Tanggal Masuk
-            <input type="date" value={f.tanggal_masuk} onChange={e=>setField('tanggal_masuk',e.target.value)} />
+          <label>
+            Tanggal Masuk
+            <input
+              type="date"
+              value={f.tanggal_masuk}
+              onChange={e => setField('tanggal_masuk', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Gaji Pokok
-            <input type="number" value={f.gaji_pokok} onChange={e=>setField('gaji_pokok',e.target.value)} />
+          <label>
+            Gaji Pokok
+            <input
+              type="number"
+              value={f.gaji_pokok}
+              onChange={e => setField('gaji_pokok', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Nama Bank
-            <input value={f.bank_name} onChange={e=>setField('bank_name',e.target.value)} />
+          <label>
+            Nama Bank
+            <input
+              value={f.bank_name}
+              onChange={e => setField('bank_name', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
-          <label>Nomor Rekening
-            <input value={f.bank_account} onChange={e=>setField('bank_account',e.target.value)} />
+          <label>
+            Nomor Rekening
+            <input
+              value={f.bank_account}
+              onChange={e => setField('bank_account', e.target.value)}
+              disabled={saving}
+            />
           </label>
 
           <label className="switch-row">
@@ -1966,29 +2417,29 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
             <input
               type="checkbox"
               checked={f.status_aktif}
-              onChange={e=>setField('status_aktif',e.target.checked)}
+              onChange={e => setField('status_aktif', e.target.checked)}
+              disabled={saving}
             />
           </label>
         </div>
 
         <div className="drawer-foot">
-          <button type="button" className="secondary" onClick={onClose}>Batal</button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Batal
+          </button>
+
           <button
             type="button"
             className="primary"
-            onClick={async () => {
-              if (!f.id_karyawan.trim()) {
-                await appAlert(t('employee_id_required'));
-                return;
-              }
-              onSave({
-                ...f,
-                id_karyawan: f.id_karyawan.trim().toUpperCase(),
-                gaji_pokok: Number(f.gaji_pokok || 0)
-              });
-            }}
+            onClick={() => void save()}
+            disabled={saving}
           >
-            Simpan Perubahan
+            {saving ? 'Mengupload & Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
       </aside>
@@ -2038,7 +2489,11 @@ function TalentForm({tab,employees,onClose,onSaved}:{tab:string;employees:Karyaw
 }
 function Reports({employees,attendance,onExport}:{employees:Karyawan[];attendance:Absensi[];onExport:(r:any[],f:string)=>void}){const {t}=useTranslation();const [tab,setTab]=useState('overview'),[payroll,setPayroll]=useState<any[]>([]);useEffect(()=>{if(tab==='payroll')supabase.from('hris_payroll').select('*').order('created_at',{ascending:false}).limit(2000).then(({data})=>setPayroll(data||[]))},[tab]);const items=[['overview',t('analytics'),'report'],['attendance',t('attendance_report'),'clock'],['payroll',t('payroll_report'),'payroll'],['people',t('employee_report'),'users']].map(([key,label,icon])=>({key,label,icon}));return <Branch title={t('reports')} desc={t('reports_desc')} items={items} tab={tab} setTab={setTab}>{tab==='overview'?<div className="report-grid"><ReportCard name={t('master_employees')} count={employees.length} onClick={()=>onExport(employees,'laporan-karyawan.csv')}/><ReportCard name={t('attendance')} count={attendance.length} onClick={()=>onExport(attendance,'laporan-absensi.csv')}/><ReportCard name={t('payroll')} count={payroll.length} onClick={()=>onExport(payroll,'laporan-payroll.csv')}/></div>:tab==='attendance'?<ReportCard name={t('attendance_report')} count={attendance.length} onClick={()=>onExport(attendance,'laporan-absensi.csv')}/>:tab==='people'?<ReportCard name={t('employee_report')} count={employees.length} onClick={()=>onExport(employees,'laporan-karyawan.csv')}/>:<ReportCard name={t('payroll_report')} count={payroll.length} onClick={()=>onExport(payroll,'laporan-payroll.csv')}/>}</Branch>}
 function ReportCard({name,count,onClick}:{name:string;count:number;onClick:()=>void}){const {t}=useTranslation();return <div className="report-card"><span>{t('reports')||'LAPORAN'}</span><h3>{name}</h3><b>{count}</b><p>{t('data_available')||'data tersedia'}</p><button className="primary" onClick={onClick}>{t('export_csv')||'Export CSV'}</button></div>}
-function Settings(){
+function Settings({
+  canManageThemes = false
+}: {
+  canManageThemes?: boolean
+}){
   const { t } = useTranslation();
   const [f,setF]=useState<any>({
     company_name:'Project by Tirta',
@@ -2084,11 +2539,17 @@ function Settings(){
     id:'moon',
     name:'Project by Tirta — Navy Gold',
     description:'Tema utama enterprise Project by Tirta.',
-    primary:'#101a33', accent:'#d6ae58', background:'#f6f7fb',
-    surface:'#ffffff', text:'#172033', border:'#d6ae58',
-    sidebar:'#101a33', sidebarText:'#ffffff',
-    sidebarMuted:'#cbd5e1', sidebarActive:'#d6ae58',
-    sidebarActiveText:'#101a33'
+    primary:'#0b132b',
+    accent:'#d6ae58',
+    background:'#101827',
+    surface:'#172033',
+    text:'#f8fafc',
+    border:'#d6ae58',
+    sidebar:'#0b132b',
+    sidebarText:'#f8fafc',
+    sidebarMuted:'#cbd5e1',
+    sidebarActive:'#d6ae58',
+    sidebarActiveText:'#0b132b'
   };
 
   const [customTheme,setCustomTheme]=useState({
@@ -2261,13 +2722,14 @@ function Settings(){
 
   useEffect(()=>{
     supabase.from('hris_company_settings').select('*').eq('id',1).maybeSingle().then(({data})=>{if(data)setF(data);});
-    const saved=localStorage.getItem('moonx-theme');
+    const saved=canManageThemes
+      ? localStorage.getItem('moonx-theme')
+      : null;
     if(saved){
       try { applyTheme(JSON.parse(saved),false); }
       catch { applyTheme(DEFAULT_THEME,false); }
     } else applyTheme(DEFAULT_THEME,false);
-  },[]);
-
+  },[canManageThemes]);
   const save=async()=>{
     const {error}=await supabase.from('hris_company_settings').upsert({...f,id:1});
     setMsg(error?error.message:'Pengaturan berhasil disimpan.');
@@ -2357,16 +2819,18 @@ function Settings(){
           </button>
         ))}
 
-        <button
-          type="button"
-          className={tab==='Tampilan & Tema'?'active':''}
-          onClick={()=>setTab('Tampilan & Tema')}
-        >
-          🎨 Tampilan & Tema
-        </button>
+        {canManageThemes && (
+          <button
+            type="button"
+            className={tab==='Tampilan & Tema'?'active':''}
+            onClick={()=>setTab('Tampilan & Tema')}
+          >
+            🎨 Tampilan & Tema
+          </button>
+        )}
       </div>
 
-      {tab==='Tampilan & Tema' ? (
+      {tab==='Tampilan & Tema' && canManageThemes ? (
         <div className="theme-manager">
 
           <div className="theme-manager-header">
