@@ -38,6 +38,13 @@ function safeImageHref(value: string) {
   return '';
 }
 
+function fittedFontSize(value: unknown, base: number, min: number, maxWidth = 490) {
+  const text = String(value ?? '');
+  if (!text) return base;
+  const estimated = Math.floor(maxWidth / Math.max(text.length * 0.55, 1));
+  return Math.max(min, Math.min(base, estimated));
+}
+
 
 function barcodePattern(value: string) {
   let seed = 2166136261;
@@ -83,13 +90,13 @@ function CardArtwork({ employee, side, companyName, logoUrl, photoOverride }: { 
     <text x="140" y="91" font-family="Arial" font-size="14" fill="#d6ae58">KARTU IDENTITAS KARYAWAN</text>
     ${photoSvg}
     <text x="292" y="171" font-family="Arial" font-size="15" font-weight="700" fill="#667085">NAMA LENGKAP</text>
-    <text x="292" y="205" font-family="Arial" font-size="27" font-weight="700" fill="#101a33">${escapeXml(employee.nama || '-')}</text>
+    <text x="292" y="205" font-family="Arial" font-size="${fittedFontSize(employee.nama,27,15,490)}" font-weight="700" fill="#101a33">${escapeXml(employee.nama || '-')}</text>
     <text x="292" y="248" font-family="Arial" font-size="15" font-weight="700" fill="#667085">JABATAN</text>
-    <text x="292" y="280" font-family="Arial" font-size="20" fill="#344054">${escapeXml(employee.jabatan || '-')}</text>
+    <text x="292" y="280" font-family="Arial" font-size="${fittedFontSize(employee.jabatan,20,13,490)}" fill="#344054">${escapeXml(employee.jabatan || '-')}</text>
     <text x="292" y="324" font-family="Arial" font-size="15" font-weight="700" fill="#667085">ID KARYAWAN</text>
     <text x="292" y="356" font-family="Arial" font-size="22" font-weight="700" fill="#101a33">${escapeXml(id)}</text>
     <text x="292" y="400" font-family="Arial" font-size="15" font-weight="700" fill="#667085">DEPARTEMEN</text>
-    <text x="292" y="430" font-family="Arial" font-size="18" fill="#344054">${escapeXml(employee.departemen || '-')}</text>
+    <text x="292" y="430" font-family="Arial" font-size="${fittedFontSize(employee.departemen,18,13,490)}" fill="#344054">${escapeXml(employee.departemen || '-')}</text>
     <rect x="54" y="444" width="748" height="1" fill="#d0d5dd"/>
     <text x="54" y="482" font-family="Arial" font-size="13" fill="#667085">ID VERIFIKASI</text>
     <text x="54" y="507" font-family="Arial" font-size="17" font-weight="700" fill="#101a33">${escapeXml(id)}</text>
@@ -99,15 +106,34 @@ function CardArtwork({ employee, side, companyName, logoUrl, photoOverride }: { 
 
 export default function IDCardModule({ employees, companyName, logoUrl }: Props) {
   const { t } = useTranslation();
-  const [selectedId, setSelectedId] = useState(employees[0]?.id || '');
+  const eligibleEmployees = useMemo(
+    () => employees.filter(e => e.status_aktif === true),
+    [employees]
+  );
+
+  const [selectedId, setSelectedId] = useState(
+    eligibleEmployees[0]?.id || ''
+  );
   const [side, setSide] = useState<'front' | 'back'>('front');
   const [query, setQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState<string[]>([]);
   const [photoDataUrl, setPhotoDataUrl] = useState<string>('');
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const filtered = useMemo(() => employees.filter(e => `${e.nama} ${e.id_karyawan || ''} ${e.jabatan || ''}`.toLowerCase().includes(query.toLowerCase())), [employees, query]);
-  const employee = employees.find(e => e.id === selectedId) || filtered[0] || employees[0];
+  const filtered = useMemo(
+    () =>
+      eligibleEmployees.filter(e =>
+        `${e.nama} ${e.id_karyawan || ''} ${e.jabatan || ''}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      ),
+    [eligibleEmployees, query]
+  );
+
+  const employee =
+    eligibleEmployees.find(e => e.id === selectedId) ||
+    filtered[0] ||
+    eligibleEmployees[0];
 
   useEffect(() => {
     let cancelled = false;
@@ -120,27 +146,86 @@ export default function IDCardModule({ employees, companyName, logoUrl }: Props)
         return;
       }
 
+      const toDataUrl = (blob: Blob) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Gagal membaca foto'));
+            }
+          };
+
+          reader.onerror = () => reject(new Error('Gagal membaca foto'));
+          reader.readAsDataURL(blob);
+        });
+
       try {
+        const isRemote =
+          /^https?:\/\//i.test(photo) ||
+          /^data:image\//i.test(photo) ||
+          /^blob:/i.test(photo) ||
+          /^\//.test(photo);
+
         let source = photo;
-        if (!/^https?:\/\//i.test(photo) && !/^data:image\//i.test(photo) && !/^blob:/i.test(photo) && !/^\//.test(photo)) {
-          const { data, error } = await supabase.storage.from('profile-photos').createSignedUrl(photo, 900);
-          if (error || !data?.signedUrl) throw error || new Error('Foto tidak dapat diakses');
+
+        if (!isRemote) {
+          const { data, error } =
+            await supabase.storage
+              .from('profile-photos')
+              .createSignedUrl(photo, 900);
+
+          if (error || !data?.signedUrl) {
+            throw error || new Error('Signed URL foto gagal');
+          }
+
           source = data.signedUrl;
         }
+
         const response = await fetch(source);
-        if (!response.ok) throw new Error('Foto tidak dapat diambil');
+
+        if (!response.ok) {
+          throw new Error('Fetch foto gagal');
+        }
 
         const blob = await response.blob();
+        const dataUrl = await toDataUrl(blob);
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (!cancelled && typeof reader.result === 'string') {
-            setPhotoDataUrl(reader.result);
-          }
-        };
-        reader.readAsDataURL(blob);
+        if (!cancelled) {
+          setPhotoDataUrl(dataUrl);
+        }
       } catch (error) {
-        console.error('Gagal memuat foto ID Card:', error);
+        console.error('Fetch foto ID Card gagal, coba Storage download:', error);
+
+        try {
+          if (
+            !/^https?:\/\//i.test(photo) &&
+            !/^data:image\//i.test(photo) &&
+            !/^blob:/i.test(photo) &&
+            !/^\//.test(photo)
+          ) {
+            const { data, error: downloadError } =
+              await supabase.storage
+                .from('profile-photos')
+                .download(photo);
+
+            if (downloadError || !data) {
+              throw downloadError || new Error('Storage download gagal');
+            }
+
+            const dataUrl = await toDataUrl(data);
+
+            if (!cancelled) {
+              setPhotoDataUrl(dataUrl);
+              return;
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Fallback foto ID Card juga gagal:', fallbackError);
+        }
+
         if (!cancelled) setPhotoDataUrl('');
       }
     };
@@ -231,7 +316,7 @@ export default function IDCardModule({ employees, companyName, logoUrl }: Props)
   };
 
   const cetakCards = async (ids: string[]) => {
-    const list = employees.filter(e => ids.includes(e.id));
+    const list = eligibleEmployees.filter(e => ids.includes(e.id));
     if (!list.length) return;
 
     const win = window.open('', '_blank', 'width=1000,height=800');

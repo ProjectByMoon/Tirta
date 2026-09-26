@@ -77,3 +77,162 @@
   }
 }
 
+
+
+/* =========================================================
+   FINAL ID CARD UX
+   - Tidak memotong kartu
+   - Tombol jelas tanpa hover
+   - Preview benar-benar fit
+   - Hanya karyawan aktif yang ditampilkan dari TS
+   ========================================================= */
+
+.id-card-module {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+}
+
+.id-card-layout {
+  width: 100% !important;
+  min-width: 0 !important;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 300px) !important;
+}
+
+.id-card-pratinjau-panel {
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.id-card-pratinjau {
+  width: 100% !important;
+  max-width: 856px !important;
+  margin: 0 auto !important;
+  min-width: 0 !important;
+  aspect-ratio: 856 / 540 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.id-card-pratinjau svg,
+.id-card-pratinjau > svg {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+}
+
+.id-card-actions {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+.id-card-actions .primary,
+.id-card-actions button.primary {
+  background: #d6ae58 !important;
+  color: #0b1222 !important;
+  border: 2px solid #f0d68c !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.id-card-actions .secondary,
+.id-card-actions button.secondary {
+  background: #172033 !important;
+  color: #f8fafc !important;
+  border: 2px solid #d6ae58 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.id-card-actions .primary:hover,
+.id-card-actions .secondary:hover {
+  opacity: 1 !important;
+}
+
+.id-card-actions button:disabled {
+  opacity: .55 !important;
+}
+
+.side-switch {
+  border: 2px solid #d6ae58 !important;
+  background: #101827 !important;
+}
+
+.side-switch button {
+  background: #172033 !important;
+  color: #e2e5ea !important;
+  border: 0 !important;
+}
+
+.side-switch button.active {
+  background: #d6ae58 !important;
+  color: #0b1222 !important;
+  font-weight: 800 !important;
+}
+
+.id-card-toolbar input,
+.id-card-toolbar select {
+  background: #111b33 !important;
+  color: #f8fafc !important;
+  border: 2px solid #d6ae58 !important;
+}
+
+.id-card-toolbar input::placeholder {
+  color: #aeb7c5 !important;
+}
+
+.id-card-list {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.id-employee-row {
+  min-width: 0 !important;
+}
+
+.id-employee-row b {
+  color: #f8fafc !important;
+}
+
+.id-employee-row small {
+  color: #aeb7c5 !important;
+}
+
+.id-avatar {
+  background: #172033 !important;
+  color: #f0d68c !important;
+  border: 1px solid #d6ae58 !important;
+}
+
+@media (max-width: 1100px) {
+  .id-card-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .id-card-pratinjau {
+    max-width: 856px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .id-card-actions {
+    flex-direction: column !important;
+  }
+
+  .id-card-actions button {
+    width: 100% !important;
+  }
+
+  .id-card-pratinjau {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

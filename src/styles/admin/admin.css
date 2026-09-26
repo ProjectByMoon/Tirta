@@ -10353,3 +10353,505 @@ textarea::placeholder,
 .id-card-list small {
   color: var(--frame-card-muted) !important;
 }
+
+/* =========================================================
+   FINAL UX — EMPLOYEE DETAIL + SIDEBAR + CENTER SEARCH
+   ========================================================= */
+
+/* ---------- EMPLOYEE DETAIL: UNIVERSAL READABLE FRAME ---------- */
+
+.employee-detail-card {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+
+  width: min(980px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100dvh - 24px) !important;
+
+  overflow: hidden !important;
+
+  background: #101827 !important;
+  color: #f8fafc !important;
+
+  border: 2px solid #d6ae58 !important;
+  border-radius: 18px !important;
+
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .32) !important;
+}
+
+/* Header detail */
+.employee-detail-card > .export-head {
+  flex: 0 0 auto !important;
+
+  background: #101827 !important;
+  color: #f8fafc !important;
+
+  border-bottom: 2px solid #d6ae58 !important;
+
+  padding: 18px 22px !important;
+}
+
+.employee-detail-card > .export-head span,
+.employee-detail-card > .export-head .eyebrow {
+  color: #e1bd6b !important;
+  font-weight: 800 !important;
+}
+
+.employee-detail-card > .export-head h2 {
+  color: #ffffff !important;
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
+.employee-detail-card > .export-head p {
+  color: #b8c0cc !important;
+  font-size: 12px !important;
+}
+
+/* Area data — berlaku untuk Detail Semua Karyawan
+   dan Detail Karyawan Baru */
+.employee-detail-card .employee-detail-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+
+  width: 100% !important;
+  box-sizing: border-box !important;
+
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+
+  gap: 12px !important;
+
+  padding: 18px 22px !important;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  background: #0b132b !important;
+}
+
+/* section data */
+.employee-detail-card .employee-detail-grid .detail-section {
+  min-width: 0 !important;
+  overflow: hidden !important;
+
+  padding: 14px !important;
+
+  background: #101827 !important;
+  color: #e2e5ea !important;
+
+  border: 1px solid rgba(214,174,88,.72) !important;
+  border-radius: 12px !important;
+}
+
+.employee-detail-card .detail-section h3 {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+
+  margin: 0 0 8px !important;
+  padding-bottom: 8px !important;
+
+  border-bottom: 1px solid rgba(214,174,88,.42) !important;
+}
+
+/* item data */
+.employee-detail-card .detail-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+
+  gap: 12px !important;
+  min-width: 0 !important;
+
+  margin: 0 0 7px !important;
+  padding: 9px 10px !important;
+
+  background: #172033 !important;
+  color: #e2e5ea !important;
+
+  border: 1px solid rgba(214,174,88,.55) !important;
+  border-radius: 7px !important;
+}
+
+.employee-detail-card .detail-item span {
+  flex: 0 0 42% !important;
+  min-width: 0 !important;
+
+  color: #aeb7c5 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+
+  overflow-wrap: anywhere !important;
+}
+
+.employee-detail-card .detail-item b {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+
+  text-align: right !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+/* Footer tombol selalu terlihat */
+.employee-detail-card > .export-foot {
+  position: relative !important;
+  z-index: 20 !important;
+
+  flex: 0 0 auto !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+
+  gap: 9px !important;
+
+  margin: 0 !important;
+  padding: 13px 22px !important;
+
+  background: #101827 !important;
+  border-top: 2px solid #d6ae58 !important;
+}
+
+.employee-detail-card > .export-foot button {
+  min-height: 40px !important;
+  padding: 9px 16px !important;
+
+  border-radius: 8px !important;
+
+  font-size: 12px !important;
+  font-weight: 800 !important;
+
+  white-space: nowrap !important;
+}
+
+/* Tombol tutup */
+.employee-detail-card > .export-foot .secondary {
+  background: #172033 !important;
+  color: #f8fafc !important;
+  border: 2px solid #8f99a8 !important;
+}
+
+/* Tombol Tolak */
+.employee-detail-card > .export-foot .danger-text {
+  background: #431a20 !important;
+  color: #ffb8b8 !important;
+  border: 2px solid #e05a5a !important;
+}
+
+/* Tombol Terima/Konfirmasi */
+.employee-detail-card > .export-foot .primary {
+  background: #d6ae58 !important;
+  color: #0b1222 !important;
+  border: 2px solid #f0d68c !important;
+}
+
+/* ---------- DETAIL KARYAWAN BARU YANG MEMAKAI BODY WRAPPER ---------- */
+
+.employee-detail-card .employee-detail-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+
+  display: flex !important;
+  gap: 20px !important;
+  align-items: flex-start !important;
+
+  padding: 18px 22px !important;
+
+  overflow: hidden !important;
+
+  background: #0b132b !important;
+}
+
+.employee-detail-card .employee-detail-body > div:first-child {
+  flex: 0 0 150px !important;
+
+  width: 150px !important;
+  height: 190px !important;
+
+  background: #172033 !important;
+  border: 2px solid #d6ae58 !important;
+  border-radius: 12px !important;
+
+  color: #e2e5ea !important;
+}
+
+.employee-detail-card .employee-detail-body .employee-detail-grid {
+  flex: 1 1 auto !important;
+
+  height: 100% !important;
+  min-height: 0 !important;
+
+  padding: 0 !important;
+
+  background: transparent !important;
+}
+
+/* ---------- SIDEBAR DESKTOP: SEDIKIT LEBIH RAMPING ---------- */
+
+@media (min-width: 900px) {
+
+  .talenta-shell > .sidebar {
+    flex: 0 0 238px !important;
+    width: 238px !important;
+    min-width: 238px !important;
+  }
+
+  .talenta-shell > .sidebar.collapsed {
+    flex: 0 0 68px !important;
+    width: 68px !important;
+    min-width: 68px !important;
+  }
+
+  .sidebar {
+    padding-right: 7px !important;
+  }
+
+  .sidebar .nav-item {
+    min-width: 0 !important;
+  }
+
+  /* ---------- QUICK SEARCH BENAR-BENAR TENGAH ---------- */
+
+  .talenta-shell > .talenta-main > .topbar {
+    display: grid !important;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(280px, 430px)
+      minmax(0, 1fr) !important;
+
+    align-items: center !important;
+    gap: 18px !important;
+
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+
+    box-sizing: border-box !important;
+  }
+
+  .topbar > .topbar-left {
+    grid-column: 1 !important;
+    justify-self: start !important;
+
+    min-width: 0 !important;
+  }
+
+  .topbar > .search-global {
+    grid-column: 2 !important;
+    justify-self: center !important;
+
+    width: min(430px, 100%) !important;
+    min-width: 280px !important;
+    max-width: 430px !important;
+
+    margin: 0 auto !important;
+
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+
+    z-index: 2 !important;
+
+    box-sizing: border-box !important;
+  }
+
+  .topbar > .top-actions {
+    grid-column: 3 !important;
+    justify-self: end !important;
+
+    min-width: 0 !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+
+  .topbar > .search-global input {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ---------- DESKTOP YANG LEBIH SEMPIT ---------- */
+
+@media (min-width: 900px) and (max-width: 1180px) {
+
+  .talenta-shell > .sidebar {
+    flex-basis: 228px !important;
+    width: 228px !important;
+    min-width: 228px !important;
+  }
+
+  .topbar > .search-global {
+    min-width: 230px !important;
+    width: min(360px, 100%) !important;
+    max-width: 360px !important;
+  }
+
+  .talenta-shell > .talenta-main > .topbar {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(230px, 360px)
+      minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+/* ---------- TABLET / PHONE ---------- */
+
+@media (max-width: 700px) {
+
+  .employee-detail-card {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 10px) !important;
+  }
+
+  .employee-detail-card .employee-detail-grid {
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+  }
+
+  .employee-detail-card .employee-detail-body {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    padding: 14px !important;
+  }
+
+  .employee-detail-card .employee-detail-body > div:first-child {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: 165px !important;
+  }
+
+  .employee-detail-card .employee-detail-body .employee-detail-grid {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .employee-detail-card > .export-foot {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 12px 14px !important;
+  }
+
+  .employee-detail-card > .export-foot button {
+    width: 100% !important;
+  }
+}
+
+
+/* =========================================================
+   TOPBAR — SAMAKAN 3 ICON DENGAN ICON PROFILE
+   ========================================================= */
+
+/* Tombol/icon aksi di area kanan topbar */
+.topbar button,
+.topbar [role="button"] {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  padding: 0 !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Ukuran icon di dalam tombol */
+.topbar button svg,
+.topbar [role="button"] svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Jangan ubah ukuran foto profil */
+.topbar .avatar-button,
+.topbar .avatar-button img {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+
+/* =========================================================
+   FINAL — 3 NOTIFICATION ICONS SAMAKAN DENGAN PROFILE AVATAR
+   ========================================================= */
+
+.admin-floating-notification-group {
+  gap: 7px !important;
+}
+
+.admin-floating-action {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+
+  padding: 0 !important;
+  border-width: 1px !important;
+
+  border-radius: 50% !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
+}
+
+.admin-floating-action-icon {
+  font-size: 15px !important;
+  line-height: 1 !important;
+}
+
+.admin-floating-action-badge {
+  min-width: 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  padding: 0 !important;
+
+  top: -4px !important;
+  right: -4px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  border: 1px solid #101827 !important;
+  font-size: 8px !important;
+  line-height: 1 !important;
+}
+
+/* Jangan membesarkan icon saat disentuh */
+.admin-floating-action:hover,
+.admin-floating-action.active {
+  transform: none !important;
+}
+
+@media (max-width: 700px) {
+  .admin-floating-notification-group {
+    gap: 5px !important;
+  }
+
+  .admin-floating-action {
+    width: 27px !important;
+    height: 27px !important;
+    min-width: 27px !important;
+    min-height: 27px !important;
+  }
+
+  .admin-floating-action-icon {
+    font-size: 14px !important;
+  }
+}
+
