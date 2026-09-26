@@ -5,15 +5,15 @@
 
 .employee-login,
 .employee-portal {
-  --navy: #0B1736;
-  --navy-2: #12244D;
-  --gold: #D6B56A;
-  --gold-light: #E8D39B;
-  --gold-soft: #FBF5E7;
-  --ink: #0B1736;
-  --muted: #64748B;
-  --line: #E5EAF2;
-  --bg: #F7F9FC;
+  --navy: var(--app-primary, #0B1736);
+  --navy-2: color-mix(in srgb, var(--app-primary, #0B1736) 82%, #ffffff);
+  --gold: var(--app-accent, #D6B56A);
+  --gold-light: color-mix(in srgb, var(--app-accent, #D6B56A) 55%, #ffffff);
+  --gold-soft: color-mix(in srgb, var(--app-accent, #D6B56A) 12%, #ffffff);
+  --ink: var(--app-text, #0B1736);
+  --muted: var(--app-muted, #64748B);
+  --line: var(--app-border, #E5EAF2);
+  --bg: var(--app-bg, #F7F9FC);
 
   font-family:
     Inter,
@@ -1564,3 +1564,146 @@
 .suggestion-success h2{margin:.35rem 0 .4rem}
 .suggestion-success p{max-width:520px;margin:0 0 18px;color:var(--text-muted,#64748b);line-height:1.6}
 @media(max-width:700px){.suggestion-header{display:grid}.suggestion-security{justify-self:start}.suggestion-footer{align-items:stretch;flex-direction:column}.suggestion-footer .portal-primary{width:100%}}
+
+
+/* Shared Project by Tirta theme contract. */
+.employee-login,
+.employee-portal { color: var(--app-text, #172033); background: var(--app-bg, #f6f7fb); }
+.employee-login-card { background: var(--app-surface, #fff); border-color: var(--app-border, #dfe5ee); }
+
+/* =========================================================
+   PROJECT BY TIRTA — FIXED NAVY/SILVER/GOLD CARDS
+   Cards stay identical across themes; main page background may vary.
+   ========================================================= */
+.employee-portal,
+.employee-login {
+  --fixed-card-bg: #101827;
+  --fixed-card-bg-2: #0b132b;
+  --fixed-card-text: #e2e5ea;
+  --fixed-card-muted: #aeb7c5;
+  --fixed-gold: #d6ae58;
+  --fixed-sidebar: #070f20;
+}
+
+.employee-portal {
+  background: var(--bg) !important;
+  color: var(--fixed-card-text) !important;
+}
+
+.employee-topbar {
+  background: var(--fixed-card-bg) !important;
+  color: var(--fixed-card-text) !important;
+  border-bottom: 2px solid var(--fixed-gold) !important;
+}
+
+.portal-card,
+.ess-kpi,
+.attendance-card,
+.info-card,
+.payslip-card,
+.table-card,
+.employee-loading-card,
+.security-box,
+.card,
+.action-card,
+.attendance-meta > div,
+.quick-list button,
+.schedule-item,
+.info-list > div,
+.request-list > div,
+.salary-lines > div {
+  background: var(--fixed-card-bg) !important;
+  color: var(--fixed-card-text) !important;
+  border: 2px solid var(--fixed-gold) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.16) !important;
+}
+
+.employee-login-card,
+.employee-loading-card {
+  background: var(--fixed-card-bg) !important;
+  color: var(--fixed-card-text) !important;
+  border: 2px solid var(--fixed-gold) !important;
+}
+
+.card-title h2,
+.info-card h2,
+.payslip-card h2,
+.empty-state h2,
+.employee-heading h1,
+.login-copy h2,
+.ess-kpi strong,
+.portal-card h1,
+.portal-card h2,
+.portal-card h3,
+.portal-card h4,
+.payslip-card h3,
+.attendance-card h3,
+.info-card h3,
+.employee-login-card h1,
+.employee-brand strong,
+.employee-user b {
+  color: var(--fixed-card-text) !important;
+}
+
+.portal-card p,
+.portal-card small,
+.portal-card span,
+.ess-kpi span,
+.employee-heading p,
+.login-copy p,
+.employee-user small,
+.info-list small,
+.request-list small,
+.payslip-card p,
+.schedule-item small,
+.schedule-item span,
+.attendance-meta small,
+.login-footnote,
+.employee-brand small,
+.employee-loading-copy span {
+  color: var(--fixed-card-muted) !important;
+}
+
+.employee-form input,
+.employee-form select,
+.employee-form textarea,
+.attendance-card select,
+.employee-login-card input {
+  background: #111b33 !important;
+  color: #eef1f5 !important;
+  border: 1px solid var(--fixed-gold) !important;
+}
+
+.portal-secondary,
+.portal-logout {
+  background: var(--fixed-card-bg-2) !important;
+  color: var(--fixed-card-text) !important;
+  border: 2px solid var(--fixed-gold) !important;
+}
+
+.portal-primary {
+  background: var(--fixed-gold) !important;
+  color: #0b1222 !important;
+  border: 2px solid #f0d68c !important;
+}
+
+.quick-list button:hover,
+.schedule-item:hover {
+  background: #172033 !important;
+  border-color: #f0d68c !important;
+}
+
+.status-badge,
+.employee-tabs button.active {
+  border-color: var(--fixed-gold) !important;
+}
+
+@media (max-width:700px) {
+  .portal-card,
+  .ess-kpi,
+  .attendance-card,
+  .info-card,
+  .payslip-card,
+  .table-card,
+  .employee-loading-card { border-width: 1.5px !important; }
+}

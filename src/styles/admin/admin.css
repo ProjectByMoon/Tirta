@@ -9801,3 +9801,555 @@ body,
   }
 }
 /* ATTENDANCE_UNIFIED_END */
+
+
+/* =========================================================
+   PROJECT BY TIRTA — TOPBAR + GLOBAL READABILITY PATCH
+   ========================================================= */
+.topbar { gap: 18px; }
+
+.topbar-left {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.topbar > .search-global {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 40vw);
+  background: var(--mx-surface) !important;
+  color: var(--mx-text) !important;
+  border-color: var(--mx-border) !important;
+}
+
+.topbar > .search-global input { color: var(--mx-text) !important; }
+
+.top-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-shrink: 0;
+}
+
+.topbar,
+.page,
+.talenta-shell,
+.talenta-main,
+.admin-page-frame,
+.panel,
+.card,
+.stat-card,
+.mini-kpi,
+.quick,
+.table-panel,
+.form-panel,
+.org-card,
+.calendar-card,
+.feature-card,
+.report-card,
+.setting-card,
+.profile-panel,
+.profile-menu,
+.role-menu,
+.theme-card,
+.custom-theme-panel {
+  color: var(--mx-text) !important;
+}
+
+.page,
+.talenta-shell,
+.talenta-main,
+.admin-page-frame { background: var(--mx-background) !important; }
+
+.panel,
+.card,
+.stat-card,
+.mini-kpi,
+.quick,
+.table-panel,
+.form-panel,
+.org-card,
+.calendar-card,
+.feature-card,
+.report-card,
+.setting-card,
+.profile-panel,
+.profile-menu,
+.role-menu,
+.theme-card,
+.custom-theme-panel {
+  background: var(--mx-surface) !important;
+  border-color: var(--mx-border) !important;
+}
+
+.profile-menu,
+.role-menu,
+.export-card,
+.employee-detail-card,
+.admin-notification-dropdown {
+  color: var(--mx-text) !important;
+  background: var(--mx-surface) !important;
+  border-color: var(--mx-border) !important;
+}
+
+.profile-menu button,
+.role-menu button,
+.admin-notification-dropdown-item,
+.admin-notification-dropdown-all { color: var(--mx-text-secondary) !important; }
+
+.profile-menu button:hover,
+.role-menu button:hover,
+.role-menu button.selected,
+.admin-notification-dropdown-item:hover,
+.admin-notification-dropdown-item.unread,
+.admin-notification-dropdown-all:hover {
+  background: color-mix(in srgb, var(--mx-accent) 10%, var(--mx-surface)) !important;
+  color: var(--mx-text) !important;
+}
+
+.form-grid label,
+.profile-field,
+.detail-item span,
+.table-wrap th,
+.toolbar,
+.toolbar label,
+.filter,
+.search-box,
+label { color: var(--mx-text-secondary) !important; }
+
+input,
+select,
+textarea,
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.search-global {
+  background: var(--mx-surface) !important;
+  color: var(--mx-text) !important;
+  border-color: var(--mx-border) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.search-global input::placeholder { color: var(--mx-text-muted) !important; }
+
+@media (max-width: 900px) {
+  .topbar > .search-global { width: min(320px, 35vw); }
+  .topbar-left .crumb span,
+  .topbar-left .crumb b { display: none; }
+}
+
+@media (max-width: 700px) {
+  .topbar { padding: 0 12px; gap: 10px; }
+  .topbar-left { gap: 10px; }
+  .topbar > .search-global { width: min(280px, 43vw); }
+  .top-actions { gap: 8px; }
+}
+
+@media (max-width: 520px) {
+  .topbar { display: flex; }
+  .topbar > .search-global {
+    position: static;
+    order: 2;
+    transform: none;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+  .topbar-left { order: 1; flex: 0 0 auto; }
+  .top-actions { order: 3; }
+}
+
+/* =========================================================
+   PROJECT BY TIRTA — FIXED EXECUTIVE FRAME
+   Theme choice changes ONLY the main page background.
+   Cards/sidebar keep the Navy + Silver + Gold identity.
+   ========================================================= */
+:root {
+  --frame-card-bg: #101827;
+  --frame-card-bg-2: #0b132b;
+  --frame-card-text: #e2e5ea;
+  --frame-card-muted: #aeb7c5;
+  --frame-card-border: #d6ae58;
+  --frame-sidebar-bg: #070f20;
+  --frame-sidebar-text: #eef1f5;
+  --frame-sidebar-muted: #aeb7c5;
+  --frame-sidebar-active: #d6ae58;
+  --frame-sidebar-active-text: #0b1222;
+}
+
+.talenta-shell,
+.talenta-main,
+.page,
+.page-content,
+.content-area {
+  background: var(--mx-background) !important;
+  color: var(--mx-page-text, #172033) !important;
+}
+
+.topbar {
+  background: var(--frame-card-bg) !important;
+  color: var(--frame-card-text) !important;
+  border-bottom: 2px solid var(--frame-card-border) !important;
+}
+
+.topbar .icon-btn,
+.topbar .crumb,
+.topbar .crumb span,
+.topbar .crumb b {
+  color: var(--frame-card-muted) !important;
+}
+
+/* Every primary admin card uses the same dark/silver/gold frame. */
+.panel,
+.card,
+.stat-card,
+.mini-kpi,
+.quick,
+.table-panel,
+.toolbar-panel,
+.form-panel,
+.org-card,
+.calendar-card,
+.feature-card,
+.report-card,
+.setting-card,
+.employee-detail-card,
+.employee-loading-card,
+.export-card,
+.attendance-card,
+.info-card,
+.payslip-card,
+.table-card,
+.action-card,
+.info-box,
+.detail-section,
+.compact-panel,
+.kanban-card,
+.permission-section,
+.custom-theme-panel,
+.theme-card,
+.id-card-pratinjau-panel,
+.id-card-list,
+.security-box,
+.feedback-card-title,
+.feedback-detail-card,
+.feedback-list-card,
+.announcement-list-card,
+.announcement-module,
+.module-page,
+.runtime-error-card {
+  background: var(--frame-card-bg) !important;
+  color: var(--frame-card-text) !important;
+  border: 2px solid var(--frame-card-border) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.18) !important;
+}
+
+/* Nested mini-panels stay dark, with a restrained gold frame. */
+.attendance-meta > div,
+.quick-list button,
+.schedule-item,
+.info-box,
+.detail-item,
+.permission-item,
+.role-list-item,
+.list-select,
+.assignment-row,
+.branch-nav,
+.action-card,
+.notification-item,
+.announcement-item,
+.feedback-list-card,
+.theme-preview-cards i {
+  background: var(--frame-card-bg-2) !important;
+  color: var(--frame-card-text) !important;
+  border-color: rgba(214,174,88,.70) !important;
+}
+
+.panel h1,
+.panel h2,
+.panel h3,
+.panel h4,
+.panel h5,
+.panel h6,
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card h5,
+.card h6,
+.stat-card strong,
+.stat-card b,
+.org-card h3,
+.calendar-card h3,
+.feature-card h3,
+.report-card b,
+.setting-card h3,
+.employee-detail-card h2,
+.employee-detail-card h3,
+.card-title h2,
+.info-card h2,
+.payslip-card h2,
+.card-title,
+.theme-card-body strong,
+.theme-manager-header h2,
+.custom-theme-panel h3 {
+  color: var(--frame-card-text) !important;
+}
+
+.panel p,
+.panel small,
+.panel label,
+.panel span,
+.card p,
+.card small,
+.card label,
+.card span,
+.stat-card span,
+.stat-card small,
+.org-card p,
+.calendar-card p,
+.feature-card p,
+.report-card p,
+.setting-card p,
+.employee-detail-card p,
+.theme-card-body small,
+.custom-theme-panel p,
+.theme-manager-header p,
+.form-grid label,
+.detail-item span,
+.detail-item small,
+.info-list small,
+.request-list small,
+.schedule-item small,
+.schedule-item span {
+  color: var(--frame-card-muted) !important;
+}
+
+input,
+select,
+textarea,
+.page input,
+.page select,
+.page textarea,
+.panel input,
+.panel select,
+.panel textarea,
+.card input,
+.card select,
+.card textarea,
+.search-global {
+  background: #111b33 !important;
+  color: #eef1f5 !important;
+  border: 1px solid var(--frame-card-border) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.search-global input::placeholder {
+  color: #8f9bac !important;
+}
+
+.primary,
+.theme-save-button {
+  background: var(--frame-sidebar-active) !important;
+  color: var(--frame-sidebar-active-text) !important;
+  border: 2px solid var(--frame-card-border) !important;
+}
+
+.secondary,
+.btn-secondary {
+  background: var(--frame-card-bg-2) !important;
+  color: var(--frame-card-text) !important;
+  border: 2px solid var(--frame-card-border) !important;
+}
+
+.status.green { background: rgba(68,197,138,.14) !important; color: #78e0ad !important; border-color: #44c58a !important; }
+.status.red { background: rgba(255,125,125,.14) !important; color: #ff9d9d !important; border-color: #ff7d7d !important; }
+.status.orange { background: rgba(224,173,87,.14) !important; color: #efc77a !important; border-color: #e0ad57 !important; }
+.status.blue { background: rgba(120,169,255,.14) !important; color: #a4c7ff !important; border-color: #78a9ff !important; }
+
+/* Thick framed sidebar, identical across all themes. */
+.sidebar,
+.talenta-sidebar {
+  background: linear-gradient(180deg, #070f20 0%, #0b132b 100%) !important;
+  color: var(--frame-sidebar-text) !important;
+  border-right: 3px solid var(--frame-card-border) !important;
+  box-shadow: inset -1px 0 0 rgba(214,174,88,.45), 8px 0 26px rgba(0,0,0,.12) !important;
+}
+
+.sidebar .sidebar-head,
+.sidebar .brand,
+.sidebar .brand b,
+.sidebar .brand small,
+.sidebar .nav-title,
+.sidebar .group-title,
+.sidebar .workspace,
+.sidebar .workspace b,
+.sidebar .workspace small,
+.sidebar .admin-mini,
+.sidebar .admin-mini b,
+.sidebar .admin-mini small {
+  color: var(--frame-sidebar-text) !important;
+}
+
+.sidebar .brand small,
+.sidebar .group-title,
+.sidebar .nav-title,
+.sidebar .workspace small,
+.sidebar .admin-mini small {
+  color: var(--frame-sidebar-muted) !important;
+}
+
+.sidebar .workspace {
+  background: #0d1830 !important;
+  border: 1px solid rgba(214,174,88,.65) !important;
+}
+
+.sidebar .nav-item {
+  background: transparent !important;
+  color: var(--frame-sidebar-text) !important;
+  border: 2px solid transparent !important;
+  border-radius: 9px !important;
+}
+
+.sidebar .nav-item:hover {
+  background: rgba(214,174,88,.10) !important;
+  color: #ffffff !important;
+  border-color: rgba(214,174,88,.70) !important;
+}
+
+.sidebar .nav-item.active {
+  background: var(--frame-sidebar-active) !important;
+  color: var(--frame-sidebar-active-text) !important;
+  border: 2px solid #f0d68c !important;
+  box-shadow: 0 0 18px rgba(214,174,88,.22) !important;
+}
+
+.sidebar .nav-item.active *,
+.sidebar .nav-item.active svg {
+  color: var(--frame-sidebar-active-text) !important;
+  stroke: currentColor !important;
+}
+
+.sidebar .nav-item em {
+  background: rgba(214,174,88,.18) !important;
+  color: #f0d68c !important;
+  border: 1px solid rgba(214,174,88,.55) !important;
+}
+
+.sidebar .logout {
+  color: #f2f5f9 !important;
+  border: 1px solid rgba(214,174,88,.35) !important;
+  background: transparent !important;
+}
+
+.sidebar .logout:hover {
+  background: rgba(214,174,88,.10) !important;
+  color: #ffffff !important;
+  border-color: var(--frame-card-border) !important;
+}
+
+/* Theme picker: show the real fixed frame and only vary page background. */
+.theme-preview {
+  border: 2px solid var(--frame-card-border) !important;
+}
+.theme-preview-sidebar { background: #070f20 !important; }
+.theme-preview-top { border-color: var(--frame-card-border) !important; background: var(--frame-card-bg) !important; }
+.theme-preview-cards i { background: var(--frame-card-bg-2) !important; border: 1px solid var(--frame-card-border) !important; }
+.theme-preview-line { background: var(--frame-card-border) !important; }
+.theme-color-dot { background: var(--frame-card-border) !important; }
+.theme-active-badge { background: var(--frame-card-border) !important; color: var(--frame-sidebar-active-text) !important; }
+.theme-frame-note { color: var(--frame-card-muted) !important; font-size: 10px; line-height: 1.5; }
+
+/* Search stays centered while sharing the framed visual language. */
+.topbar > .search-global {
+  background: #101827 !important;
+  border: 2px solid var(--frame-card-border) !important;
+}
+.topbar > .search-global input { background: transparent !important; border: 0 !important; }
+
+@media (max-width: 700px) {
+  .sidebar,
+  .talenta-sidebar { border-right-width: 2px !important; }
+  .panel,
+  .card,
+  .stat-card,
+  .mini-kpi,
+  .quick,
+  .table-panel,
+  .form-panel,
+  .org-card,
+  .calendar-card,
+  .feature-card,
+  .report-card,
+  .setting-card { border-width: 1.5px !important; }
+}
+
+/* Additional card surfaces introduced by newer HR modules. */
+.dashboard-card,
+.detail-card,
+.profile-card,
+.announcement-hero,
+.announcement-compose,
+.announcement-list-card,
+.feedback-list-card,
+.feedback-detail-card,
+.export-card,
+.action-card,
+.compact-panel,
+.id-card-pratinjau-panel,
+.id-card-list {
+  background: var(--frame-card-bg) !important;
+  color: var(--frame-card-text) !important;
+  border: 2px solid var(--frame-card-border) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.18) !important;
+}
+
+.dashboard-card h1,
+.dashboard-card h2,
+.dashboard-card h3,
+.detail-card h1,
+.detail-card h2,
+.detail-card h3,
+.profile-card h1,
+.profile-card h2,
+.profile-card h3,
+.announcement-hero h2,
+.announcement-compose h2,
+.announcement-compose h3,
+.announcement-list-card h2,
+.announcement-list-card h3,
+.feedback-list-card h2,
+.feedback-list-card h3,
+.feedback-detail-card h2,
+.feedback-detail-card h3,
+.export-card h2,
+.export-card h3,
+.action-card b,
+.compact-panel h3,
+.id-card-pratinjau-panel h2,
+.id-card-list h2 {
+  color: var(--frame-card-text) !important;
+}
+
+.dashboard-card p,
+.detail-card p,
+.profile-card p,
+.announcement-hero p,
+.announcement-compose p,
+.announcement-list-card p,
+.feedback-list-card p,
+.feedback-detail-card p,
+.export-card p,
+.action-card small,
+.compact-panel p,
+.id-card-pratinjau-panel small,
+.id-card-list small {
+  color: var(--frame-card-muted) !important;
+}

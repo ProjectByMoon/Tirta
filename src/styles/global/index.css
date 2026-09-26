@@ -6,6 +6,21 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-primary: #101a33;
+  --app-primary-contrast: #ffffff;
+  --app-accent: #d6ae58;
+  --app-bg: #f6f7fb;
+  --app-surface: #ffffff;
+  --app-surface-alt: #eef2f7;
+  --app-text: #172033;
+  --app-muted: #667085;
+  --app-border: #dfe5ee;
+  --app-success: #16845a;
+  --app-warning: #b7791f;
+  --app-danger: #b42318;
+}
+
 html,
 body,
 #root {
@@ -24,13 +39,13 @@ html {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: #f4f7fb;
+  background: var(--app-bg);
 }
 
 body {
   min-height: 100vh;
-  color: #10213f;
-  background: #f4f7fb;
+  color: var(--app-text);
+  background: var(--app-bg);
 }
 
 button,

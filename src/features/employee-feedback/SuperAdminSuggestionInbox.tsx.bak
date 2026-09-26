@@ -1,7 +1,7 @@
 import { useTranslation } from '../../locales/LanguageContext';
 import type { Suggestion } from './types';
 
-const statusKeys: Record<string, string> = {
+const statusKeys: Record<Suggestion['status'], string> = {
   new: 'new',
   reviewing: 'reviewing',
   in_progress: 'in_progress',

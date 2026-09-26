@@ -268,3 +268,27 @@
 .field-optional{font-size:11px;color:#94A3B8;font-weight:600}
 .field-help{font-size:11px;color:#64748B;font-weight:500;line-height:1.45}
 .registration-logo img{width:100%;height:100%;object-fit:contain;padding:6px}
+
+
+/* Shared Project by Tirta theme contract: keep text/surfaces readable and consistent. */
+.registration-page { background: var(--app-bg, #f6f7fb); color: var(--app-text, #172033); }
+.registration-card { background: var(--app-surface, #fff); border-color: var(--app-border, #dfe5ee); color: var(--app-text, #172033); }
+.registration-brand div strong,
+.registration-heading h1,
+.registration-section h3,
+.registration-success h1,
+.registration-success-box strong { color: var(--app-text, #172033); }
+.registration-brand div span,
+.registration-heading p,
+.registration-field,
+.registration-role-note,
+.registration-role-note p,
+.registration-success p,
+.registration-success-box span { color: var(--app-muted, #667085); }
+.registration-field input,
+.registration-field textarea,
+.registration-back { background: var(--app-surface, #fff); color: var(--app-text, #172033); border-color: var(--app-border, #dfe5ee); }
+.registration-field input::placeholder,
+.registration-field textarea::placeholder { color: var(--app-muted, #667085); }
+.registration-button { background: var(--app-primary, #101a33); color: var(--app-primary-contrast, #fff); }
+.registration-button:hover { background: color-mix(in srgb, var(--app-primary, #101a33) 88%, #000); }

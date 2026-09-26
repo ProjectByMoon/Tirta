@@ -190,3 +190,14 @@
   .public-home::before,.public-hero-copy,.moon-hero-visual,.moon-glow,.orbit-one,.orbit-two,.public-features article { animation:none !important; }
   .public-primary,.public-secondary,.public-cta,.public-brand img { transition:none; }
 }
+
+/* Public feature cards share the same framed identity. */
+.public-features article {
+  background: #101827 !important;
+  color: #e2e5ea !important;
+  border: 2px solid #d6ae58 !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.16) !important;
+}
+.public-features article > span { background: #0b132b !important; color: #d6ae58 !important; border-color: #d6ae58 !important; }
+.public-features b { color: #e2e5ea !important; }
+.public-features p { color: #aeb7c5 !important; }

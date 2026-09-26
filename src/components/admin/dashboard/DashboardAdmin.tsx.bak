@@ -1680,7 +1680,7 @@ function Employees({data,onDelete,onEdit,onExport,onAdd}:{data:Karyawan[];onDele
 </td></tr>):<Empty cols={7}/>}</tbody></table></div></div></>
 }
 function NewEmployees({data,onRefresh}:{data:Karyawan[];onRefresh:()=>void}) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [selected,setSelected]=useState<Karyawan|null>(null);
   const [photoUrl,setPhotoUrl]=useState('');
   const [busy,setBusy]=useState(false);

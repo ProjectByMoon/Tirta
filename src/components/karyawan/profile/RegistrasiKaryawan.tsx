@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import moonLogo from '../../../assets/moon-logo.svg';
 import { supabase } from '../../../lib/supabase/client';
+import { useTranslation } from '../../../locales/LanguageContext';
 import '../../../styles/employee/registration.css';
 
 interface RegistrasiKaryawanProps {
@@ -8,6 +9,7 @@ interface RegistrasiKaryawanProps {
 }
 
 export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     nik_ktp: '',
     id_karyawan: '',
@@ -54,12 +56,12 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
     const file = e.target.files[0];
 
     if (!file.type.startsWith('image/')) {
-      setError('File foto harus berupa gambar.');
+      setError('file_photo_error');
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setError('Ukuran foto maksimal 2MB.');
+      setError('file_photo_size_error');
       return;
     }
 
@@ -78,12 +80,12 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
     const email = form.email.trim();
 
     if (!nik) {
-      setError('NIK KTP wajib diisi.');
+      setError('nik_required');
       return;
     }
 
     if (!/^[0-9]{16}$/.test(nik)) {
-      setError('NIK KTP harus terdiri dari 16 digit angka.');
+      setError('nik_16_digits');
       return;
     }
 
@@ -91,108 +93,107 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
       idKaryawan &&
       !/^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$/.test(idKaryawan)
     ) {
-      setError(
-        'ID Karyawan hanya boleh berisi huruf, angka, titik, garis bawah, atau tanda hubung (3–32 karakter).'
-      );
+      setError('employee_id_format_error');
       return;
     }
 
     if (!nama) {
-      setError('Nama lengkap wajib diisi.');
+      setError('full_name_required');
       return;
     }
 
     if (!form.tempat_lahir.trim()) {
-      setError('Tempat lahir wajib diisi.');
+      setError('birth_place_required');
       return;
     }
 
     if (!form.tanggal_lahir) {
-      setError('Tanggal lahir wajib diisi.');
+      setError('birth_date_required');
       return;
     }
 
     if (!form.jenis_kelamin) {
-      setError('Jenis kelamin wajib dipilih.');
+      setError('gender_required');
       return;
     }
 
     if (!form.alamat_rumah.trim()) {
-      setError('Alamat rumah wajib diisi.');
+      setError('address_required');
       return;
     }
 
     if (!form.no_telp.trim()) {
-      setError('Nomor telepon wajib diisi.');
+      setError('phone_required');
       return;
     }
 
     if (!/^[0-9+\-\s()]{8,20}$/.test(form.no_telp.trim())) {
-      setError('Format nomor telepon tidak valid.');
+      setError('phone_invalid');
       return;
     }
 
     if (!email) {
-      setError('Email wajib diisi.');
+      setError('email_required');
       return;
     }
 
     if (!form.status_pernikahan) {
-      setError('Status pernikahan wajib dipilih.');
+      setError('marital_required');
       return;
     }
 
     if (!form.nama_ibu_kandung.trim()) {
-      setError('Nama ibu kandung wajib diisi.');
+      setError('mother_name_required');
       return;
     }
 
     if (!form.departemen.trim()) {
-      setError('Departemen wajib diisi.');
+      setError('department_required');
       return;
     }
 
     if (!form.jabatan.trim()) {
-      setError('Jabatan wajib diisi.');
+      setError('position_required');
       return;
     }
 
     if (!form.status_karyawan) {
-      setError('Status karyawan wajib dipilih.');
+      setError('employee_status_required');
       return;
     }
 
     if (!form.tanggal_masuk) {
-      setError('Tanggal masuk wajib diisi.');
+      setError('join_date_required');
       return;
     }
 
     if (!form.gaji_pokok.trim()) {
-      setError('Gaji pokok wajib diisi.');
+      setError('basic_salary_required');
       return;
     }
 
     const gaji = Number(form.gaji_pokok.replace(/[^0-9]/g, ''));
 
     if (!Number.isFinite(gaji) || gaji < 0) {
-      setError('Gaji pokok tidak valid.');
+      setError('basic_salary_invalid');
       return;
     }
 
     if (form.password.length < 6) {
-      setError('Password minimal 6 karakter.');
+      setError('password_min_error');
       return;
     }
 
     if (form.password !== form.konfirmasi) {
-      setError('Konfirmasi password tidak sama.');
+      setError('password_mismatch');
       return;
     }
 
     setLoading(true);
 
+    let uploadedPhotoPath = '';
+
     try {
-      let uploadedPhotoPath = '';
 
       // Registration photo is intentionally uploaded before sign-up so it also works
       // when email confirmation is enabled and Supabase returns no session. The
@@ -222,7 +223,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
         if (uploadError) throw uploadError;
       }
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: form.password,
         options: {
@@ -237,6 +238,13 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
             no_telp: form.no_telp.trim(),
             status_pernikahan: form.status_pernikahan,
             nama_ibu_kandung: form.nama_ibu_kandung.trim(),
+            departemen: form.departemen.trim(),
+            jabatan: form.jabatan.trim(),
+            status_karyawan: form.status_karyawan,
+            tanggal_masuk: form.tanggal_masuk,
+            gaji_pokok: String(gaji),
+            bank_name: form.bank_name.trim(),
+            bank_account: form.bank_account.trim(),
             foto_url: uploadedPhotoPath || null,
           },
         },
@@ -244,18 +252,23 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
       if (signUpError) throw signUpError;
 
-      // The auth trigger copies foto_url from raw_user_meta_data into karyawan,
-      // so this works both with immediate sessions and email-confirmation flows.
-      // If sign-up fails, remove the anonymous registration object to avoid orphans.
-      if (signUpError && uploadedPhotoPath) {
-        await supabase.storage.from('profile-photos').remove([uploadedPhotoPath]);
+      // Supabase can intentionally return an obfuscated successful response when
+      // an account already exists. A missing user means no Auth INSERT occurred,
+      // therefore the employee trigger and HR notification cannot run.
+      if (!signUpData?.user) {
+        throw new Error('email_already_or_other');
       }
 
+      // The auth trigger copies foto_url from raw_user_meta_data into karyawan,
+      // so the stored registration photo remains available to HR for review.
       setSuccess(true);
     } catch (err: any) {
+      if (uploadedPhotoPath) {
+        await supabase.storage.from('profile-photos').remove([uploadedPhotoPath]).catch(() => undefined);
+      }
       setError(
         err?.message ||
-          'Pendaftaran gagal. Silakan coba lagi.'
+          'generic_registration_error'
       );
     } finally {
       setLoading(false);
@@ -270,19 +283,13 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
             <img src={moonLogo} alt="Project by Tirta" />
           </div>
 
-          <h1>Pendaftaran Berhasil</h1>
+          <h1>{t('registration_success_title')}</h1>
 
-          <p>
-            Data Anda berhasil dikirim dan masuk ke proses
-            verifikasi HR/Admin. Jika email masih menunggu verifikasi, foto dapat dilengkapi setelah akun aktif.
-          </p>
+          <p>{t('registration_success_desc')}</p>
 
           <div className="registration-success-box">
-            <strong>Menunggu Verifikasi</strong>
-            <span>
-              Akun Anda akan dapat digunakan setelah HR/Admin
-              mengaktifkannya.
-            </span>
+            <strong>{t('registration_pending')}</strong>
+            <span>{t('registration_pending_desc')}</span>
           </div>
 
           <button
@@ -290,7 +297,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
             className="registration-button"
             onClick={onBack}
           >
-            Kembali ke Login
+            {t('back_to_login')}
           </button>
         </div>
       </div>
@@ -311,7 +318,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
           <div>
             <strong>Project by Tirta</strong>
-            <span>Platform Karyawan</span>
+            <span>{t('platform_employee')}</span>
           </div>
         </div>
 
@@ -319,20 +326,17 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
           <div className="registration-heading">
             <span className="registration-eyebrow">
-              REGISTRASI KARYAWAN
+              {t('registration_kicker')}
             </span>
 
-            <h1>Daftar sebagai Karyawan</h1>
+            <h1>{t('registration_title')}</h1>
 
-            <p>
-              Lengkapi data diri, informasi pekerjaan,
-              rekening bank, dan foto profil Anda.
-            </p>
+            <p>{t('registration_desc')}</p>
           </div>
 
           {error && (
             <div className="registration-error">
-              {error}
+              {t(error)}
             </div>
           )}
 
@@ -340,7 +344,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
             {/* FOTO */}
             <div className="registration-section">
-              <h3>Foto Profil / ID Card</h3>
+              <h3>{t('profile_photo_id_card')}</h3>
 
               <div
                 style={{
@@ -355,18 +359,18 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                     width: '64px',
                     height: '64px',
                     borderRadius: '50%',
-                    backgroundColor: '#eef2f7',
+                    backgroundColor: 'var(--app-surface-alt)',
                     display: 'grid',
                     placeItems: 'center',
                     overflow: 'hidden',
-                    border: '1px solid #d8dee8',
+                    border: '1px solid var(--app-border)',
                     flexShrink: 0,
                   }}
                 >
                   {photoPreview ? (
                     <img
                       src={photoPreview}
-                      alt="Pratinjau"
+                      alt={t('preview')}
                       style={{
                         width: '100%',
                         height: '100%',
@@ -377,7 +381,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                     <span
                       style={{
                         fontSize: '20px',
-                        color: '#667085',
+                        color: 'var(--app-muted)',
                       }}
                     >
                       📷
@@ -404,17 +408,17 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                       display: 'inline-block',
                     }}
                   >
-                    Pilih Foto
+                    {t('choose_photo')}
                   </label>
 
                   <small
                     style={{
                       display: 'block',
-                      color: '#667085',
+                      color: 'var(--app-muted)',
                       marginTop: '4px',
                     }}
                   >
-                    JPG/PNG/WebP, maksimal 2MB
+                    {t('photo_requirements')}
                   </small>
                 </div>
               </div>
@@ -422,15 +426,15 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
             {/* DATA PRIBADI */}
             <div className="registration-section">
-              <h3>Data Pribadi</h3>
+              <h3>{t('personal_data')}</h3>
 
               <div className="registration-field">
-                <label>NIK KTP *</label>
+                <label>{t('nik_ktp')} *</label>
                 <input
                   name="nik_ktp"
                   value={form.nik_ktp}
                   onChange={handleChange}
-                  placeholder="16 digit NIK"
+                  placeholder={t('nik_placeholder')}
                   inputMode="numeric"
                   maxLength={16}
                   required
@@ -439,9 +443,9 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
               <div className="registration-field">
                 <label>
-                  ID Karyawan{' '}
+                  {t('employee_id')} {' '}
                   <span className="field-optional">
-                    (opsional)
+                    ({t('optional_mark')})
                   </span>
                 </label>
 
@@ -449,42 +453,39 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                   name="id_karyawan"
                   value={form.id_karyawan}
                   onChange={handleChange}
-                  placeholder="Contoh: EMP-0001"
+                  placeholder={t('employee_id_placeholder')}
                   maxLength={32}
                   autoCapitalize="characters"
                 />
 
-                <small className="field-help">
-                  Boleh dikosongkan. Sistem akan membuat ID
-                  registrasi sementara.
-                </small>
+                <small className="field-help">{t('employee_id_optional_help')}</small>
               </div>
 
               <div className="registration-field">
-                <label>Nama Lengkap *</label>
+                <label>{t('full_name')} *</label>
                 <input
                   name="nama"
                   value={form.nama}
                   onChange={handleChange}
-                  placeholder="Masukkan nama lengkap"
+                  placeholder={t('full_name_placeholder')}
                   required
                 />
               </div>
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>Tempat Lahir *</label>
+                  <label>{t('birth_place')} *</label>
                   <input
                     name="tempat_lahir"
                     value={form.tempat_lahir}
                     onChange={handleChange}
-                    placeholder="Contoh: Jakarta"
+                    placeholder={t('birth_place_placeholder')}
                     required
                   />
                 </div>
 
                 <div className="registration-field">
-                  <label>Tanggal Lahir *</label>
+                  <label>{t('birth_date')} *</label>
                   <input
                     type="date"
                     name="tanggal_lahir"
@@ -497,7 +498,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>Jenis Kelamin *</label>
+                  <label>{t('gender')} *</label>
 
                   <select
                     name="jenis_kelamin"
@@ -505,20 +506,14 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                     onChange={handleChange}
                     required
                   >
-                    <option value="">
-                      -- Pilih Jenis Kelamin --
-                    </option>
-                    <option value="Laki-laki">
-                      Laki-laki
-                    </option>
-                    <option value="Perempuan">
-                      Perempuan
-                    </option>
+                    <option value="">-- {t('select_gender')} --</option>
+                    <option value="Laki-laki">{t('male')}</option>
+                    <option value="Perempuan">{t('female')}</option>
                   </select>
                 </div>
 
                 <div className="registration-field">
-                  <label>Status Pernikahan *</label>
+                  <label>{t('marital_status')} *</label>
 
                   <select
                     name="status_pernikahan"
@@ -526,41 +521,33 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                     onChange={handleChange}
                     required
                   >
-                    <option value="">
-                      -- Pilih Status --
-                    </option>
-                    <option value="Belum Menikah">
-                      Belum Menikah
-                    </option>
-                    <option value="Menikah">
-                      Menikah
-                    </option>
-                    <option value="Cerai">
-                      Cerai
-                    </option>
+                    <option value="">-- {t('select_marital_status')} --</option>
+                    <option value="Belum Menikah">{t('unmarried')}</option>
+                    <option value="Menikah">{t('married')}</option>
+                    <option value="Cerai">{t('divorced')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="registration-field">
-                <label>Nama Ibu Kandung *</label>
+                <label>{t('mother_name')} *</label>
                 <input
                   name="nama_ibu_kandung"
                   value={form.nama_ibu_kandung}
                   onChange={handleChange}
-                  placeholder="Masukkan nama lengkap ibu kandung"
+                  placeholder={t('mother_name_placeholder')}
                   required
                 />
               </div>
 
               <div className="registration-field">
-                <label>Alamat Rumah *</label>
+                <label>{t('home_address')} *</label>
 
                 <textarea
                   name="alamat_rumah"
                   value={form.alamat_rumah}
                   onChange={handleChange}
-                  placeholder="Masukkan alamat lengkap"
+                  placeholder={t('home_address_placeholder')}
                   rows={3}
                   required
                 />
@@ -568,7 +555,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>No. Telepon *</label>
+                  <label>{t('phone')} *</label>
 
                   <input
                     name="no_telp"
@@ -581,7 +568,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                 </div>
 
                 <div className="registration-field">
-                  <label>Email *</label>
+                  <label>{t('email')} *</label>
 
                   <input
                     type="email"
@@ -597,29 +584,29 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
             {/* DATA PEKERJAAN */}
             <div className="registration-section">
-              <h3>Data Pekerjaan</h3>
+              <h3>{t('employment')}</h3>
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>Departemen *</label>
+                  <label>{t('department')} *</label>
 
                   <input
                     name="departemen"
                     value={form.departemen}
                     onChange={handleChange}
-                    placeholder="Contoh: Human Resources"
+                    placeholder={t('department_placeholder')}
                     required
                   />
                 </div>
 
                 <div className="registration-field">
-                  <label>Jabatan *</label>
+                  <label>{t('position')} *</label>
 
                   <input
                     name="jabatan"
                     value={form.jabatan}
                     onChange={handleChange}
-                    placeholder="Contoh: Staff HR"
+                    placeholder={t('position_placeholder')}
                     required
                   />
                 </div>
@@ -627,7 +614,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>Status Karyawan *</label>
+                  <label>{t('employee_status')} *</label>
 
                   <select
                     name="status_karyawan"
@@ -636,25 +623,17 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                     required
                   >
                     <option value="">
-                      -- Pilih Status --
+                      {t('select_employee_status')}
                     </option>
-                    <option value="Tetap">
-                      Tetap
-                    </option>
-                    <option value="Kontrak">
-                      Kontrak
-                    </option>
-                    <option value="Harian">
-                      Harian
-                    </option>
-                    <option value="Probation">
-                      Probation
-                    </option>
+                    <option value="Tetap">{t('permanent')}</option>
+                    <option value="Kontrak">{t('contract')}</option>
+                    <option value="Harian">{t('daily')}</option>
+                    <option value="Probation">{t('probation')}</option>
                   </select>
                 </div>
 
                 <div className="registration-field">
-                  <label>Tanggal Masuk *</label>
+                  <label>{t('join_date')} *</label>
 
                   <input
                     type="date"
@@ -667,39 +646,37 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
               </div>
 
               <div className="registration-field">
-                <label>Gaji Pokok *</label>
+                <label>{t('basic_salary')} *</label>
 
                 <input
                   name="gaji_pokok"
                   value={form.gaji_pokok}
                   onChange={handleChange}
-                  placeholder="Contoh: 5000000"
+                  placeholder={t('salary_placeholder')}
                   inputMode="numeric"
                   required
                 />
 
                 <small className="field-help">
-                  Masukkan angka tanpa titik atau simbol Rp.
+                  {t('salary_help')}
                 </small>
               </div>
             </div>
 
             {/* BANK */}
             <div className="registration-section">
-              <h3>Informasi Rekening Gaji</h3>
+              <h3>{t('salary_account')}</h3>
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>Nama Bank</label>
+                  <label>{t('bank')}</label>
 
                   <select
                     name="bank_name"
                     value={form.bank_name}
                     onChange={handleChange}
                   >
-                    <option value="">
-                      -- Pilih Bank --
-                    </option>
+                    <option value="">{t('select_bank')}</option>
                     <option value="BCA">BCA</option>
                     <option value="Mandiri">Mandiri</option>
                     <option value="BNI">BNI</option>
@@ -710,20 +687,18 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
                     <option value="Permata">
                       Permata
                     </option>
-                    <option value="Lainnya">
-                      Lainnya
-                    </option>
+                    <option value="Lainnya">{t('account_other')}</option>
                   </select>
                 </div>
 
                 <div className="registration-field">
-                  <label>Nomor Rekening</label>
+                  <label>{t('bank_account')}</label>
 
                   <input
                     name="bank_account"
                     value={form.bank_account}
                     onChange={handleChange}
-                    placeholder="Masukkan nomor rekening"
+                    placeholder={t('account_number_placeholder')}
                     inputMode="numeric"
                   />
                 </div>
@@ -732,32 +707,32 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
 
             {/* KEAMANAN */}
             <div className="registration-section">
-              <h3>Keamanan Akun</h3>
+              <h3>{t('account_security')}</h3>
 
               <div className="registration-row">
                 <div className="registration-field">
-                  <label>Password *</label>
+                  <label>{t('password')} *</label>
 
                   <input
                     type="password"
                     name="password"
                     value={form.password}
                     onChange={handleChange}
-                    placeholder="Minimal 6 karakter"
+                    placeholder={t('password_min_placeholder')}
                     minLength={6}
                     required
                   />
                 </div>
 
                 <div className="registration-field">
-                  <label>Konfirmasi Password *</label>
+                  <label>{t('confirm_password')} *</label>
 
                   <input
                     type="password"
                     name="konfirmasi"
                     value={form.konfirmasi}
                     onChange={handleChange}
-                    placeholder="Ulangi password"
+                    placeholder={t('confirm_password_placeholder')}
                     minLength={6}
                     required
                   />
@@ -770,9 +745,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
               className="registration-button"
               disabled={loading}
             >
-              {loading
-                ? 'Memproses...'
-                : 'Daftar Sekarang'}
+              {loading ? t('processing') : t('register_now')}
             </button>
 
             <button
@@ -780,7 +753,7 @@ export default function RegistrasiKaryawan({ onBack }: RegistrasiKaryawanProps) 
               className="registration-back"
               onClick={onBack}
             >
-              Sudah memiliki akun? Kembali ke Login
+              {t('already_have_account_back')}
             </button>
 
           </form>

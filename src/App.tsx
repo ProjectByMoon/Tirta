@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { isSupabaseConfigured, supabase } from './lib/supabase/client';
 import { signIn } from './lib/auth';
 import { checkForAppUpdate } from './lib/app-update';
+import { useTranslation } from './locales/LanguageContext';
 
 import moonLogo from './assets/moon-logo.svg';
 
@@ -133,6 +134,7 @@ async function resolveAccount(): Promise<{
    ========================================================= */
 
 export default function App() {
+  const { t } = useTranslation();
   const [view, setView] = useState<View>('home');
   const [loginOpen, setLoginOpen] = useState(false);
 
@@ -289,9 +291,7 @@ export default function App() {
     setError('');
 
     if (!isSupabaseConfigured) {
-      setError(
-        'Supabase belum dikonfigurasi. Periksa VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.'
-      );
+      setError(t('supabase_not_configured'));
 
       return;
     }
@@ -299,7 +299,7 @@ export default function App() {
     const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanEmail || !password) {
-      setError('Email dan password wajib diisi.');
+      setError(t('email_password_required'));
 
       return;
     }
@@ -314,7 +314,7 @@ export default function App() {
 
       setError(
         loginError?.message ||
-          'Email atau password tidak valid.'
+          t('invalid_credentials')
       );
 
       return;
@@ -340,7 +340,7 @@ export default function App() {
      ======================================================= */
 
   if (checking) {
-    return <AppLoadingScreen message="Memeriksa sesi keamanan…" />;
+    return <AppLoadingScreen message={t('checking_security_session')} />;
   }
 
   /* =======================================================
@@ -443,6 +443,7 @@ function AppLoadingScreen({ message }: { message: string }) {
    RESET PASSWORD
    ========================================================= */
 function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [saving, setSaving] = useState(false);
@@ -454,11 +455,11 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
     setError('');
     setMessage('');
     if (password.length < 8) {
-      setError('Password baru minimal 8 karakter.');
+      setError(t('password_min_error_short'));
       return;
     }
     if (password !== confirmation) {
-      setError('Konfirmasi password tidak sama.');
+      setError(t('password_mismatch_short'));
       return;
     }
     setSaving(true);
@@ -468,7 +469,7 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
       setError(updateError.message);
       return;
     }
-    setMessage('Password berhasil diperbarui. Silakan lanjut ke halaman masuk.');
+    setMessage(t('password_updated'));
   };
 
   return (
@@ -476,21 +477,21 @@ function ResetPasswordScreen({ onDone }: { onDone: () => void }) {
       <section className="unified-login-card login-modal-card" aria-labelledby="reset-title">
         <div className="unified-brand">
           <div className="unified-logo"><img src={moonLogo} alt="Project by Tirta" className="moon-logo" /></div>
-          <div><strong>Project by Tirta</strong><small>Human Resources Information System</small></div>
+          <div><strong>Project by Tirta</strong><small>{t('human_resources_information_system')}</small></div>
         </div>
         <div className="unified-login-heading">
-          <span>PEMULIHAN AKUN</span>
-          <h1 id="reset-title">Buat password baru</h1>
-          <p>Gunakan password baru yang kuat dan jangan gunakan kembali password yang sama di layanan lain.</p>
+          <span>{t('reset_password')}</span>
+          <h1 id="reset-title">{t('new_password')}</h1>
+          <p>{t('new_password_hint')}</p>
         </div>
         {error && <div className="unified-login-error" role="alert">{error}</div>}
         {message && <div className="unified-login-success" role="status">{message}</div>}
         {!message && <form onSubmit={submit} className="unified-login-form">
-          <label><span>Password baru</span><input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} autoComplete="new-password" required /></label>
-          <label><span>Konfirmasi password</span><input type="password" value={confirmation} onChange={e => setConfirmation(e.target.value)} minLength={8} autoComplete="new-password" required /></label>
-          <button type="submit" className="unified-login-button" disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan Password'}</button>
+          <label><span>{t('new_password')}</span><input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} autoComplete="new-password" required /></label>
+          <label><span>{t('confirm_password_label')}</span><input type="password" value={confirmation} onChange={e => setConfirmation(e.target.value)} minLength={8} autoComplete="new-password" required /></label>
+          <button type="submit" className="unified-login-button" disabled={saving}>{saving ? t('saving') : t('save_password')}</button>
         </form>}
-        {message && <button type="button" className="unified-login-button" onClick={onDone}>Kembali ke Login</button>}
+        {message && <button type="button" className="unified-login-button" onClick={onDone}>{t('back_to_login')}</button>}
       </section>
     </main>
   );
@@ -521,6 +522,7 @@ function LoginScreen({
   loading: boolean;
   error: string;
 }) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [forgot, setForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState(email);
@@ -530,17 +532,17 @@ function LoginScreen({
 
   const sendReset = async () => {
     const target = forgotEmail.trim().toLowerCase();
-    if (!target) { setForgotMessage('Masukkan email terlebih dahulu.'); return; }
+    if (!target) { setForgotMessage(t('email_required_short')); return; }
     setForgotLoading(true); setForgotMessage('');
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(target, { redirectTo: `${window.location.origin}/reset-password` });
     setForgotLoading(false);
-    setForgotMessage(resetError ? resetError.message : 'Jika email terdaftar, instruksi reset password akan dikirim.');
+    setForgotMessage(resetError ? resetError.message : t('reset_email_sent'));
   };
 
   return (
     <main className="unified-login-page modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <section className="unified-login-card login-modal-card">
-        <button type="button" className="login-modal-close" onClick={onClose} aria-label="Tutup">×</button>
+        <button type="button" className="login-modal-close" onClick={onClose} aria-label={t('close')}>×</button>
 
         {/* =================================================
             BRAND
@@ -579,15 +581,13 @@ function LoginScreen({
 
         <div className="unified-login-heading">
 
-          <span>
-            SECURE ACCESS
-          </span>
+          <span>{t('secure_access')}</span>
 
           <h1>
              Project by Tirta
           </h1>
 
-          <p>Masuk untuk mengakses portal HR, data karyawan, absensi, payroll, dan fitur sesuai hak akses Anda.</p>
+          <p>{t('login_description')}</p>
 
         </div>
 
@@ -613,7 +613,7 @@ function LoginScreen({
           <label>
 
             <span>
-              Email
+              {t('email')}
             </span>
 
             <input
@@ -632,7 +632,7 @@ function LoginScreen({
           <label>
 
             <span>
-              Password
+              {t('password')}
             </span>
 
             <input
@@ -641,26 +641,26 @@ function LoginScreen({
               onChange={(event) =>
                 setPassword(event.target.value)
               }
-              placeholder="Masukkan password"
+              placeholder={t('password_placeholder')}
               autoComplete="current-password"
               disabled={loading}
             />
-            <button type="button" className="password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}>{showPassword ? 'Sembunyikan' : 'Tampilkan'}</button>
+            <button type="button" className="password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? t('hide_password') : t('show_password')}>{showPassword ? t('hide_password') : t('show_password')}</button>
 
           </label>
 
           <div className="login-options">
-            <label className="remember-option"><input type="checkbox" checked={remember} onChange={e => { setRemember(e.target.checked); localStorage.setItem('project-tirta-remember', e.target.checked ? '1' : '0'); }} /> <span>Ingat saya</span></label>
-            <button type="button" onClick={() => { setForgot(true); setForgotEmail(email); }}>Lupa password?</button>
+            <label className="remember-option"><input type="checkbox" checked={remember} onChange={e => { setRemember(e.target.checked); localStorage.setItem('project-tirta-remember', e.target.checked ? '1' : '0'); }} /> <span>{t('remember_me')}</span></label>
+            <button type="button" onClick={() => { setForgot(true); setForgotEmail(email); }}>{t('forgot_password')}</button>
           </div>
 
           {forgot && (
             <div className="forgot-panel">
-              <strong>Reset password</strong>
-              <p>Masukkan email akun untuk menerima instruksi pemulihan.</p>
+              <strong>{t('reset_password')}</strong>
+              <p>{t('reset_email_instruction')}</p>
               <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="nama@email.com" />
               {forgotMessage && <small>{forgotMessage}</small>}
-              <div><button type="button" className="secondary" onClick={() => setForgot(false)}>Batal</button><button type="button" className="primary" disabled={forgotLoading} onClick={sendReset}>{forgotLoading ? 'Mengirim…' : 'Kirim Link'}</button></div>
+              <div><button type="button" className="secondary" onClick={() => setForgot(false)}>{t('cancel')}</button><button type="button" className="primary" disabled={forgotLoading} onClick={sendReset}>{forgotLoading ? t('saving') : t('send_link')}</button></div>
             </div>
           )}
 
@@ -670,8 +670,8 @@ function LoginScreen({
             disabled={loading}
           >
             {loading
-              ? 'Memverifikasi...'
-              : 'Masuk ke Sistem'}
+              ? t('verifying')
+              : t('system_login')}
           </button>
 
         </form>
@@ -683,7 +683,7 @@ function LoginScreen({
         <div className="unified-login-register">
 
           <span>
-            Belum memiliki akun karyawan?
+            {t('employee_account_missing')}
           </span>
 
           <button
@@ -691,7 +691,7 @@ function LoginScreen({
             onClick={onRegister}
             disabled={loading}
           >
-            Daftar Karyawan
+            {t('register_employee')}
           </button>
 
         </div>
@@ -709,7 +709,7 @@ function LoginScreen({
           <div>
 
             <strong>
-              Secure HR Access
+              {t('secure_hr_access')}
             </strong>
 
             <small>

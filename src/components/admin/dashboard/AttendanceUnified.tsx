@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase/client';
+import { useTranslation } from '../../../locales/LanguageContext';
 
 type AttendanceRow = {
   id: string;
@@ -37,6 +38,7 @@ const attendanceType = (row: AttendanceRow) => {
 };
 
 export default function AttendanceUnified() {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -154,40 +156,40 @@ export default function AttendanceUnified() {
     <section>
       <div className="panel-head">
         <div>
-          <h2>ABSENSI</h2>
-          <p>Ringkasan, data absensi, filter, Selfie, dan GPS dalam satu halaman.</p>
+          <h2>{t('attendance')}</h2>
+          <p>{t('attendance_unified_desc')}</p>
         </div>
         <button type="button" className="secondary" onClick={load}>
-          Muat Ulang
+          {t('reload')}
         </button>
       </div>
 
       <div className="attendance-summary-grid">
-        <div className="stat-card"><span>Total</span><strong>{summary.total}</strong></div>
-        <div className="stat-card"><span>Hadir</span><strong>{summary.hadir}</strong></div>
-        <div className="stat-card"><span>Terlambat</span><strong>{summary.terlambat}</strong></div>
-        <div className="stat-card"><span>Tidak Hadir</span><strong>{summary.tidakHadir}</strong></div>
-        <div className="stat-card"><span>Cuti</span><strong>{summary.cuti}</strong></div>
-        <div className="stat-card"><span>Sakit</span><strong>{summary.sakit}</strong></div>
-        <div className="stat-card"><span>Lembur</span><strong>{summary.lembur}</strong></div>
+        <div className="stat-card"><span>{t('total')}</span><strong>{summary.total}</strong></div>
+        <div className="stat-card"><span>{t('present')}</span><strong>{summary.hadir}</strong></div>
+        <div className="stat-card"><span>{t('late')}</span><strong>{summary.terlambat}</strong></div>
+        <div className="stat-card"><span>{t('absent')}</span><strong>{summary.tidakHadir}</strong></div>
+        <div className="stat-card"><span>{t('leave')}</span><strong>{summary.cuti}</strong></div>
+        <div className="stat-card"><span>{t('sick')}</span><strong>{summary.sakit}</strong></div>
+        <div className="stat-card"><span>{t('overtime')}</span><strong>{summary.lembur}</strong></div>
       </div>
 
       <div className="panel table-panel">
         <div className="attendance-filter-grid">
           <label>
-            Tanggal Mulai
+            {t('start_date')}
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           </label>
 
           <label>
-            Tanggal Sampai
+            {t('end_date')}
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
           </label>
 
           <label>
-            Departemen/Jabatan
+            {t('department')}
             <select value={department} onChange={e => setDepartment(e.target.value)}>
-              <option value="">Semua</option>
+              <option value="">{t('all')}</option>
               {departments.map(item => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
@@ -195,7 +197,7 @@ export default function AttendanceUnified() {
           <label>
             Karyawan
             <select value={employee} onChange={e => setEmployee(e.target.value)}>
-              <option value="">Semua</option>
+              <option value="">{t('all')}</option>
               {employees.map(item => {
                 const [id, name] = item.split('|||');
                 return <option key={item} value={item}>{id} · {name || '-'}</option>;
@@ -206,15 +208,15 @@ export default function AttendanceUnified() {
           <label>
             Status
             <select value={status} onChange={e => setStatus(e.target.value)}>
-              <option value="">Semua</option>
+              <option value="">{t('all')}</option>
               {statuses.map(item => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
 
           <label>
-            Jenis Absensi
+            {t('attendance_type')}
             <select value={kind} onChange={e => setKind(e.target.value)}>
-              <option value="">Semua</option>
+              <option value="">{t('all')}</option>
               {kinds.map(item => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
@@ -235,7 +237,7 @@ export default function AttendanceUnified() {
               <tr>
                 <th>Nama</th>
                 <th>ID/NIK</th>
-                <th>Departemen/Jabatan</th>
+                <th>{t('department')}</th>
                 <th>Tanggal</th>
                 <th>Jam Masuk</th>
                 <th>Jam Pulang</th>
