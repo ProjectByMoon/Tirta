@@ -11867,3 +11867,53 @@ textarea::placeholder,
   object-fit: contain !important;
   flex: 0 0 18px !important;
 }
+
+/* =========================================================
+   FIX: CARD KARYAWAN BARU TIDAK BOLEH TURUN / TERPOTONG
+========================================================= */
+
+.profile-panel-overlay {
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px !important;
+  overflow-y: auto !important;
+}
+
+.profile-panel-overlay .employee-detail-card {
+  width: min(680px, calc(100vw - 24px)) !important;
+  max-width: 680px !important;
+  max-height: calc(100dvh - 24px) !important;
+  margin: 0 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.profile-panel-overlay .employee-detail-card .export-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: inherit;
+}
+
+.profile-panel-overlay .employee-detail-card .export-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: inherit;
+}
+
+@media (max-width: 700px) {
+  .profile-panel-overlay {
+    align-items: flex-start !important;
+    padding: 8px !important;
+  }
+
+  .profile-panel-overlay .employee-detail-card {
+    width: calc(100vw - 16px) !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 16px) !important;
+    border-radius: 14px !important;
+  }
+}
+
