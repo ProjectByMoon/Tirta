@@ -11752,3 +11752,118 @@ textarea::placeholder,
     min-width: min(255px, calc(100vw - 20px)) !important;
   }
 }
+
+
+/* =========================================================
+   PROJECT BY TIRTA — FINAL COMPACT DETAIL + TOPBAR SPACING
+   ========================================================= */
+
+/* Modal detail lebih kecil dan tetap menjaga footer */
+.employee-detail-card {
+  width: min(780px, calc(100vw - 48px)) !important;
+  max-width: calc(100vw - 48px) !important;
+  height: min(580px, calc(100dvh - 56px)) !important;
+  max-height: calc(100dvh - 56px) !important;
+}
+
+.employee-detail-card > .export-head {
+  min-height: 58px !important;
+  padding: 10px 16px !important;
+}
+
+.employee-detail-card > .export-head h2 {
+  font-size: 17px !important;
+}
+
+.employee-detail-card > .export-head p {
+  font-size: 10px !important;
+}
+
+.employee-detail-card > .employee-detail-grid {
+  padding: 10px 14px !important;
+}
+
+.employee-detail-card > .employee-detail-body,
+.employee-detail-card > .export-head + div:not(.export-foot) {
+  gap: 13px !important;
+  padding: 10px 14px !important;
+}
+
+.employee-detail-card > .employee-detail-body > div:first-child,
+.employee-detail-card > .export-head + div:not(.export-foot) > div:first-child {
+  flex-basis: 100px !important;
+  width: 100px !important;
+  min-width: 100px !important;
+  height: 130px !important;
+}
+
+.employee-detail-card > .export-foot {
+  min-height: 52px !important;
+  padding: 7px 14px !important;
+}
+
+.employee-detail-card > .export-foot button {
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 6px 12px !important;
+}
+
+/* 3 notification floating buttons dipisahkan dari refresh */
+@media (min-width: 900px) {
+  .admin-floating-notification-group {
+    right: 104px !important;
+    gap: 6px !important;
+  }
+
+  .admin-floating-action {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+  }
+
+  .admin-floating-action-icon {
+    font-size: 14px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 899px) {
+  .employee-detail-card {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    height: calc(100dvh - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+  }
+
+  .admin-floating-notification-group {
+    right: 86px !important;
+    gap: 5px !important;
+  }
+}
+
+/* =========================================================
+   ROLE THEME ISOLATION
+   Admin / HRD tetap Dark Enterprise.
+   Tema yang dipilih Super Admin tidak diwariskan.
+   ========================================================= */
+
+.role-dark-enterprise-lock {
+  --mx-primary: #0b132b !important;
+  --mx-accent: #d6ae58 !important;
+  --mx-background: #071126 !important;
+  --mx-surface: #101827 !important;
+  --mx-text: #e2e5ea !important;
+  --mx-border: #d6ae58 !important;
+}
+
+/* Project by Tirta moon icon */
+.admin-moon-icon {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  display: block !important;
+  object-fit: contain !important;
+  flex: 0 0 18px !important;
+}
