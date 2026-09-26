@@ -24,6 +24,7 @@ import { useTranslation } from '../../../locales/LanguageContext';
 import { appAlert, appConfirm, appPrompt } from '../../../lib/app-dialog';
 import AdminAnnouncementManager from '../../../features/announcements/AdminAnnouncementManager';
 import type { Announcement } from '../../../features/announcements/types';
+import AttendanceUnified from './AttendanceUnified';
 
 type Karyawan = {
   id: string;
@@ -49,6 +50,8 @@ type Karyawan = {
   role?: string;
   auth_user_id?: string | null;
   email_terverifikasi?: boolean;
+  foto_url?: string | null;
+  created_at?: string;
 };
 
 interface Absensi {
@@ -74,10 +77,11 @@ interface Absensi {
   lembur_menit?: number | string;
   foto?: string;
   selfie_masuk?: string;
+  keterangan?: string | null;
 }
 
 type MenuKey =
-  | 'overview' | 'employees' | 'employee-360' | 'employee-add' | 'id-card' | 'organization' | 'hr-operations'
+  | 'overview' | 'employees' | 'employee-new' | 'employee-360' | 'employee-add' | 'id-card' | 'organization' | 'hr-operations'
   | 'attendance' | 'attendance-today' | 'late' | 'leave' | 'overtime' | 'selfie' | 'gps'
   | 'schedule' | 'shift' | 'holiday' | 'leave-request' | 'leave-balance' | 'approvals'
   | 'payroll' | 'production-hr' | 'payroll-engine' | 'payroll-production-v22' | 'payroll-components' | 'payroll-overtime' | 'payslip'
@@ -99,7 +103,7 @@ const rolePermissions: Record<string, string[]> = {
 
 const menuGroup = (key: MenuKey) => 
   ['professional-suite'].includes(key) ? 'system' : 
-  ['employees', 'id-card', 'employee-360', 'employee-add', 'organization'].includes(key) ? 'people' : 
+  ['employees', 'employee-new', 'id-card', 'employee-360', 'employee-add', 'organization'].includes(key) ? 'people' :
   ['attendance', 'attendance-today', 'late', 'leave', 'overtime', 'selfie'].includes(key) ? 'attendance' : 
   ['schedule', 'shift', 'holiday'].includes(key) ? 'schedule' : 
   ['leave-request', 'leave-balance', 'approvals'].includes(key) ? 'leave' : 
@@ -474,7 +478,136 @@ export default function DashboardAdmin() {
   const [menu, setMenu] = useState<MenuKey>('overview');
   const [sidebar, setSidebar] = useState(() => window.innerWidth >= 900);
   const [employees, setEmployees] = useState<Karyawan[]>([]);
+  const pendingEmployees = useMemo(() => employees.filter(k => k.status_aktif === false && String(k.status_karyawan || '').toLowerCase() === 'menunggu verifikasi'), [employees]);
+
+  // FLOATING_NOTIFICATION_GROUP_START
+  const [notificationUnread, setNotificationUnread] = useState(0);
+  const [feedbackUnread, setFeedbackUnread] = useState(0);
+
+  useEffect(() => {
+    if (!logged || !isSupabaseConfigured) return;
+
+    let cancelled = false;
+
+    const loadNotificationCounts = async () => {
+      const [
+        { count: notificationCount },
+        { count: feedbackCount }
+      ] = await Promise.all([
+        supabase
+          .from('hris_notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_read', false),
+
+        supabase
+          .from('hris_employee_feedback')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'Baru')
+      ]);
+
+      if (cancelled) return;
+
+      setNotificationUnread(notificationCount || 0);
+      setFeedbackUnread(feedbackCount || 0);
+    };
+
+    void loadNotificationCounts();
+
+    const timer = window.setInterval(loadNotificationCounts, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [logged]);
+  // FLOATING_NOTIFICATION_GROUP_END
+
   const [attendance, setAttendance] = useState<Absensi[]>([]);
+
+  // NOTIFICATION_DROPDOWN_STATE_START
+  type AdminNotificationPanel = 'employee' | 'feedback' | 'notifications' | null;
+  const [notificationPanel, setNotificationPanel] = useState<AdminNotificationPanel>(null);
+  const [feedbackPreview, setFeedbackPreview] = useState<any[]>([]);
+  const [notificationPreview, setNotificationPreview] = useState<any[]>([]);
+
+  const openNotificationPanel = async (panel: Exclude<AdminNotificationPanel, null>) => {
+    setNotificationPanel(prev => prev === panel ? null : panel);
+
+    if (panel === 'feedback') {
+      const { data } = await supabase
+        .from('hris_employee_feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      setFeedbackPreview(data || []);
+    }
+
+    if (panel === 'notifications') {
+      const { data } = await supabase
+        .from('hris_notifications')
+        .select('*')
+        .eq('recipient_email', email)
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      setNotificationPreview(data || []);
+    }
+  };
+
+  const openAdminNotification = async (row: any) => {
+    if (row?.id) {
+      await supabase
+        .from('hris_notifications')
+        .update({ is_read: true })
+        .eq('id', row.id)
+        .eq('recipient_email', email);
+    }
+
+    setNotificationPanel(null);
+
+    const text = `${row?.type || ''} ${row?.title || ''} ${row?.message || ''} ${row?.link || ''}`.toLowerCase();
+
+    if (text.includes('feedback') || text.includes('saran') || text.includes('kotak')) {
+      setMenu('feedback');
+      return;
+    }
+
+    if (
+      text.includes('karyawan') ||
+      text.includes('employee') ||
+      text.includes('menunggu verifikasi')
+    ) {
+      setMenu('employee-new');
+      return;
+    }
+
+    if (
+      text.includes('cuti') ||
+      text.includes('sakit') ||
+      text.includes('leave')
+    ) {
+      setMenu('attendance');
+      return;
+    }
+
+    if (
+      text.includes('lembur') ||
+      text.includes('overtime') ||
+      text.includes('absensi') ||
+      text.includes('terlambat') ||
+      text.includes('attendance') ||
+      text.includes('absen')
+    ) {
+      setMenu('attendance');
+      return;
+    }
+
+    setMenu('notifications');
+  };
+  // NOTIFICATION_DROPDOWN_STATE_END
+
+
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -611,7 +744,8 @@ export default function DashboardAdmin() {
     {
       title: t('people'),
       items: [
-        ['employees', t('employees') || 'Semua Karyawan', 'users'] as [MenuKey, string, string],
+        ['employees', 'Semua Karyawan', 'users'] as [MenuKey, string, string],
+        ['employee-new', `Karyawan Baru${pendingEmployees.length ? ` (${pendingEmployees.length})` : ''}`, 'users'] as [MenuKey, string, string],
         ['id-card', t('id_card'), 'card'] as [MenuKey, string, string],
         ['employee-360', t('employee_360'), 'users'] as [MenuKey, string, string],
         ['organization', t('organization'), 'org'] as [MenuKey, string, string],
@@ -719,68 +853,6 @@ export default function DashboardAdmin() {
   
   const navigate = (next: MenuKey) => { setMenu(next); location.hash = `/${next}`; if (window.innerWidth < 900) setSidebar(false) };
 
-  async function confirmEmployeeEmail(employee: Karyawan) {
-    if (!employee.email) {
-      setError('Karyawan belum memiliki email.');
-      return;
-    }
-
-    const confirmed = await appConfirm(
-      `Aktifkan akun karyawan?\n\n` +
-      `Nama: ${employee.nama}\n` +
-      `ID: ${employee.id_karyawan || '-'}\n` +
-      `Email: ${employee.email}\n\n` +
-      `Jika akun belum ada, sistem akan otomatis membuat akun Supabase Auth.`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setError('');
-      setLoading(true);
-
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error('Sesi login HR/Admin tidak ditemukan. Silakan login ulang.');
-
-      const response = await fetch('/.netlify/functions/confirm-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ employee_id: employee.id }),
-      });
-
-      let result: { success?: boolean; account_created?: boolean; message?: string; error?: string; temporary_password?: string; email?: string; nama?: string } = {};
-      try { result = await response.json(); } catch { result = {}; }
-
-      if (!response.ok) throw new Error(result.error || result.message || 'Gagal membuat akun karyawan.');
-
-      if (result.success && result.account_created && result.temporary_password) {
-        await appAlert(
-          `AKUN KARYAWAN BERHASIL DIBUAT\n\n` +
-          `Nama: ${result.nama || employee.nama}\n` +
-          `Email: ${result.email || employee.email}\n\n` +
-          `PASSWORD SEMENTARA:\n` +
-          `${result.temporary_password}\n\n` +
-          `Berikan email dan password ini kepada karyawan.`
-        );
-      } else {
-        await appAlert(result.message || `Akun ${employee.nama} berhasil diaktifkan.`);
-      }
-
-      setToast(result.message || 'Akun karyawan berhasil diaktifkan.');
-      await refresh();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Gagal membuat akun karyawan.';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function refresh() {
     setLoading(true); setError('');
@@ -866,8 +938,6 @@ export default function DashboardAdmin() {
     if (e) setError(e.message); else { setEditing(null); setToast(t("employee_saved")); refresh() }
   }
 
-  const filtered = useMemo(() => employees.filter(k => `${k.nama} ${k.id_karyawan || ''} ${k.jabatan || ''} ${k.departemen || ''}`.toLowerCase().includes(search.toLowerCase())), [employees, search]);
-  const filteredA = useMemo(() => attendance.filter(a => `${a.nama || ''} ${a.id_karyawan || ''} ${a.status || ''}`.toLowerCase().includes(search.toLowerCase())), [attendance, search]);
   const payroll = employees.reduce((s, k) => s + Number(k.gaji_pokok || 0), 0);
   const activeLabel = menuGroups.flatMap(g => g.items).find((x) => x[0] === menu)?.[1] || 'Overview';
   
@@ -897,6 +967,195 @@ export default function DashboardAdmin() {
   if (!logged) return <Login email={email} pin={pin} setEmail={setEmail} setPin={setPin} onSubmit={login} loading={loading} error={error}/>;
   return (
    <div className="talenta-shell">
+
+    {/* FLOATING_NOTIFICATION_GROUP_START */}
+    <div className="admin-floating-notification-group" aria-label="Pusat notifikasi">
+      <button
+        type="button"
+        className={`admin-floating-action ${notificationPanel === 'employee' ? 'active' : ''}`}
+        onClick={() => openNotificationPanel('employee')}
+        aria-label="Karyawan Baru"
+        title="Karyawan Baru"
+      >
+        <span className="admin-floating-action-icon">👤</span>
+        {pendingEmployees.length > 0 && (
+          <span className="admin-floating-action-badge">
+            {pendingEmployees.length > 99 ? '99+' : pendingEmployees.length}
+          </span>
+        )}
+      </button>
+
+      <button
+        type="button"
+        className={`admin-floating-action ${notificationPanel === 'feedback' ? 'active' : ''}`}
+        onClick={() => openNotificationPanel('feedback')}
+        aria-label="Kotak Saran"
+        title="Kotak Saran"
+      >
+        <span className="admin-floating-action-icon">💌</span>
+        {feedbackUnread > 0 && (
+          <span className="admin-floating-action-badge">
+            {feedbackUnread > 99 ? '99+' : feedbackUnread}
+          </span>
+        )}
+      </button>
+
+      <button
+        type="button"
+        className={`admin-floating-action ${notificationPanel === 'notifications' ? 'active' : ''}`}
+        onClick={() => openNotificationPanel('notifications')}
+        aria-label="Semua Notifikasi"
+        title="Semua Notifikasi"
+      >
+        <span className="admin-floating-action-icon">🔔</span>
+        {notificationUnread > 0 && (
+          <span className="admin-floating-action-badge">
+            {notificationUnread > 99 ? '99+' : notificationUnread}
+          </span>
+        )}
+      </button>
+
+      {notificationPanel === 'employee' && (
+        <div className="admin-notification-dropdown admin-notification-dropdown-employee">
+          <div className="admin-notification-dropdown-head">
+            <strong>Karyawan Baru</strong>
+            <span>{pendingEmployees.length} menunggu verifikasi</span>
+          </div>
+
+          <div className="admin-notification-dropdown-list">
+            {pendingEmployees.slice(0, 6).map((row: any) => (
+              <button
+                key={row.id}
+                type="button"
+                className="admin-notification-dropdown-item"
+                onClick={() => {
+                  setNotificationPanel(null);
+                  setMenu('employee-new');
+                }}
+              >
+                <span className="admin-notification-dropdown-avatar">👤</span>
+                <span className="admin-notification-dropdown-copy">
+                  <strong>{row.nama || row.email || row.id_karyawan}</strong>
+                  <small>{row.id_karyawan || 'Karyawan baru'} · Menunggu verifikasi</small>
+                </span>
+              </button>
+            ))}
+
+            {pendingEmployees.length === 0 && (
+              <div className="admin-notification-empty">Tidak ada karyawan baru.</div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="admin-notification-dropdown-all"
+            onClick={() => {
+              setNotificationPanel(null);
+              setMenu('employee-new');
+            }}
+          >
+            Lihat semua karyawan baru
+          </button>
+        </div>
+      )}
+
+      {notificationPanel === 'feedback' && (
+        <div className="admin-notification-dropdown admin-notification-dropdown-feedback">
+          <div className="admin-notification-dropdown-head">
+            <strong>Kotak Saran</strong>
+            <span>{feedbackUnread} baru</span>
+          </div>
+
+          <div className="admin-notification-dropdown-list">
+            {feedbackPreview.map((row: any) => (
+              <button
+                key={row.id}
+                type="button"
+                className={`admin-notification-dropdown-item ${row.status === 'Baru' ? 'unread' : ''}`}
+                onClick={() => {
+                  setNotificationPanel(null);
+                  setMenu('feedback');
+                }}
+              >
+                <span className="admin-notification-dropdown-avatar">💌</span>
+                <span className="admin-notification-dropdown-copy">
+                  <strong>{row.judul || 'Saran baru'}</strong>
+                  <small>{row.kategori || 'Masukan'} · {row.status || 'Baru'}</small>
+                  <span>{row.isi || ''}</span>
+                </span>
+              </button>
+            ))}
+
+            {feedbackPreview.length === 0 && (
+              <div className="admin-notification-empty">Belum ada saran.</div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="admin-notification-dropdown-all"
+            onClick={() => {
+              setNotificationPanel(null);
+              setMenu('feedback');
+            }}
+          >
+            Lihat semua kotak saran
+          </button>
+        </div>
+      )}
+
+      {notificationPanel === 'notifications' && (
+        <div className="admin-notification-dropdown admin-notification-dropdown-notifications">
+          <div className="admin-notification-dropdown-head">
+            <strong>Notifikasi</strong>
+            <span>{notificationUnread} belum dibaca</span>
+          </div>
+
+          <div className="admin-notification-dropdown-list">
+            {notificationPreview.map((row: any) => (
+              <button
+                key={row.id}
+                type="button"
+                className={`admin-notification-dropdown-item ${row.is_read ? '' : 'unread'}`}
+                onClick={() => openAdminNotification(row)}
+              >
+                <span className="admin-notification-dropdown-avatar">
+                  {row.type === 'feedback' ? '💌'
+                    : row.type === 'employee' ? '👤'
+                    : row.type === 'attendance' ? '⏰'
+                    : row.type === 'leave' ? '🏖️'
+                    : row.type === 'overtime' ? '⏱️'
+                    : '🔔'}
+                </span>
+                <span className="admin-notification-dropdown-copy">
+                  <strong>{row.title || 'Notifikasi'}</strong>
+                  <small>{row.type || 'system'}</small>
+                  <span>{row.message || ''}</span>
+                </span>
+              </button>
+            ))}
+
+            {notificationPreview.length === 0 && (
+              <div className="admin-notification-empty">Tidak ada notifikasi.</div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="admin-notification-dropdown-all"
+            onClick={() => {
+              setNotificationPanel(null);
+              setMenu('notifications');
+            }}
+          >
+            Lihat semua notifikasi
+          </button>
+        </div>
+      )}
+    </div>
+    {/* FLOATING_NOTIFICATION_GROUP_END */}
+
+
 
     <aside className={`sidebar ${sidebar ? "open" : "collapsed"}`}>
       <div className="sidebar-head">
@@ -1024,11 +1283,12 @@ return (
     {menu==='overview'&&<Overview employees={employees} attendance={attendance} payroll={payroll} onNavigate={navigate} profileName={profileName}/>}
     {menu==='professional-suite'&&<ProfessionalSuite employees={employees} attendance={attendance} onNavigate={navigate}/>}
     {menu==='id-card'&&<IDCardModule employees={employees} companyName="Project by Tirta" logoUrl={moonLogo}/> }
-    {menu==='employees'&&<Employees data={filtered} onDelete={removeEmployee} onEdit={setEditing} onExport={(columns, format)=>format==='excel' ? exportExcel(employees as any,'database-karyawan.xls',columns) : exportCsv(employees as any,'database-karyawan.csv',columns)} onAdd={()=>navigate('employee-add')} onConfirmEmail={confirmEmployeeEmail}/> }
+    {menu==='employees'&&<Employees data={employees.filter(k => k.status_aktif !== false)} onDelete={removeEmployee} onEdit={setEditing} onExport={(columns, format)=>format==='excel' ? exportExcel(employees.filter(k => k.status_aktif !== false) as any,'database-karyawan.xls',columns) : exportCsv(employees.filter(k => k.status_aktif !== false) as any,'database-karyawan.csv',columns)} onAdd={()=>navigate('employee-add')} />}
+    {menu==='employee-new'&&<NewEmployees data={pendingEmployees} onRefresh={refresh} />}
     {menu==='employee-360'&&<Employee360 employees={employees} initialEmployeeId={employee360Id}/>}
     {menu==='employee-add'&&<AddEmployee refresh={refresh} onDone={()=>navigate('employees')}/>} {menu==='hr-operations'&&<HRISCore employees={employees}/>} {menu==='production-hr'&&<ProductionHR employees={employees}/>} 
     {menu==='organization'&&<MasterData initialTab="cabang"/>}
-    {['attendance','attendance-today','late','leave','overtime','selfie','gps'].includes(menu)&&<AttendanceModule type={menu} data={filteredA} onRefresh={refresh} onExport={()=>exportCsv(attendance as any,'laporan-absensi.csv')}/>}
+    {menu==='attendance'&&<AttendanceUnified />}
     {menu==='schedule'&&<MasterData initialTab="jadwal"/>}{menu==='shift'&&<MasterData initialTab="shift"/>}
     {menu==='holiday'&&<HolidayModule/>}
     {['leave-request','leave-balance'].includes(menu)&&<LeaveModule initial={menu}/>}
@@ -1266,7 +1526,7 @@ function Stat({title,value,hint,icon}:{title:string;value:string;hint:string;ico
 function Quick({label,icon,onClick}:{label:string;icon:string;onClick:()=>void}){return <button className="quick-action" onClick={onClick}><span className="quick-icon"><Icon name={icon}/></span>{label}<span aria-hidden="true">›</span></button>}
 function AttendanceMini({rows}:{rows:Absensi[]}){const { t } = useTranslation(); return <div className="table-wrap"><table><thead><tr><th>{t('employee')}</th><th>{t('date')}</th><th>{t('check_in')}</th><th>{t('check_out')}</th><th>{t('status')}</th></tr></thead><tbody>{rows.length?rows.map((a,i)=><tr key={a.id||i}><td><b>{a.nama||'-'}</b><small>{a.id_karyawan||''}</small></td><td>{a.tanggal||'-'}</td><td className="green">{a.jam_masuk||'-'}</td><td>{a.jam_pulang||'-'}</td><td><Status value={a.status||'Hadir'}/></td></tr>):<Empty cols={5}/>}</tbody></table></div>}
 
-function Employees({data,onDelete,onEdit,onExport,onAdd,onConfirmEmail}:{data:Karyawan[];onDelete:(k:Karyawan)=>void;onEdit:(k:Karyawan)=>void;onExport:(columns:string[],format:'csv'|'excel')=>void;onAdd:()=>void;onConfirmEmail:(k:Karyawan)=>void}){
+function Employees({data,onDelete,onEdit,onExport,onAdd}:{data:Karyawan[];onDelete:(k:Karyawan)=>void;onEdit:(k:Karyawan)=>void;onExport:(columns:string[],format:'csv'|'excel')=>void;onAdd:()=>void}){
   const { t } = useTranslation();
  const [open,setOpen]=useState(false);
   const [detail,setDetail]=useState<Karyawan|null>(null);
@@ -1374,11 +1634,69 @@ function Employees({data,onDelete,onEdit,onExport,onAdd,onConfirmEmail}:{data:Ka
     Edit
   </button>
 
-    {k.email&&<button className="link-btn" onClick={()=>onConfirmEmail(k)} disabled={!!k.email_terverifikasi}>{k.email_terverifikasi?'✓ Email Terverifikasi':!k.auth_user_id?'Akun Belum Terhubung':t('confirm_email')}</button>}
     <button className="danger-text" onClick={()=>onDelete(k)}>{t("delete")}</button>
   </div>
 </td></tr>):<Empty cols={7}/>}</tbody></table></div></div></>
 }
+function NewEmployees({data,onRefresh}:{data:Karyawan[];onRefresh:()=>void}) {
+  const [selected,setSelected]=useState<Karyawan|null>(null);
+  const [photoUrl,setPhotoUrl]=useState('');
+  const [busy,setBusy]=useState(false);
+
+  useEffect(()=>{
+    let active=true;
+    const load=()=>{
+      setPhotoUrl('');
+      const path=selected?.foto_url;
+      if(!path) return;
+
+      const { data } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(path);
+
+      if(active && data?.publicUrl) {
+        setPhotoUrl(data.publicUrl);
+      }
+    };
+
+    load();
+    return()=>{active=false};
+  },[selected?.id,selected?.foto_url]);
+
+  const decide=async(decision:'Terima'|'Tolak')=>{
+    if(!selected) return;
+    setBusy(true);
+    const update = decision==='Terima'
+      ? { status_aktif:true, status_karyawan: selected.status_karyawan && selected.status_karyawan !== 'Menunggu Verifikasi' ? selected.status_karyawan : 'Tetap' }
+      : { status_aktif:false, status_karyawan:'Ditolak' };
+    const {error}=await supabase.from('karyawan').update(update).eq('id',selected.id);
+    if(error){ await appAlert(error.message); setBusy(false); return; }
+    setSelected(null); setBusy(false); onRefresh();
+  };
+
+  return <>
+    <Heading title="Karyawan Baru" desc="Pendaftar baru yang menunggu pemeriksaan dan konfirmasi." />
+    <div className="toolbar"><b>{data.length} pendaftar menunggu konfirmasi</b></div>
+    <div className="panel table-panel"><div className="table-wrap"><table><thead><tr><th>Foto</th><th>Nama</th><th>ID Karyawan</th><th>Departemen</th><th>Jabatan</th><th>Tanggal Daftar</th><th>Aksi</th></tr></thead><tbody>
+      {data.length ? data.map(k=><tr key={k.id}>
+        <td><div className="mini-avatar">{k.nama?.[0]||'K'}</div></td>
+        <td><b>{k.nama||'—'}</b><small>{k.email||'—'}</small></td>
+        <td>{k.id_karyawan||'—'}</td><td>{k.departemen||'—'}</td><td>{k.jabatan||'—'}</td><td>{k.created_at ? new Date(k.created_at).toLocaleDateString('id-ID') : '—'}</td>
+        <td><button className="link-btn" onClick={()=>setSelected(k)}>Lihat Detail</button></td>
+      </tr>) : <Empty cols={7}/>}</tbody></table></div></div>
+    {selected&&<div className="profile-panel-overlay" onClick={()=>!busy&&setSelected(null)}><div className="export-card employee-detail-card" onClick={e=>e.stopPropagation()}>
+      <div className="export-head"><div><span className="eyebrow">PENDAFTARAN BARU</span><h2>{selected.nama||'Karyawan Baru'}</h2><p>Periksa seluruh data yang diisi pada form pendaftaran.</p></div><button className="icon-btn" onClick={()=>!busy&&setSelected(null)}>×</button></div>
+      <div style={{display:'flex',gap:24,alignItems:'flex-start',flexWrap:'wrap',marginBottom:20}}>
+        <div style={{width:150,height:190,borderRadius:14,overflow:'hidden',background:'#eef2f7',display:'flex',alignItems:'center',justifyContent:'center'}}>{photoUrl?<img src={photoUrl} alt="Foto pendaftar" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:48,color:'#98a2b3'}}>{selected.nama?.[0]||'K'}</span>}</div>
+        <div className="employee-detail-grid" style={{flex:1,minWidth:280}}>{[
+          ['NIK KTP',selected.nik_ktp],['ID Karyawan',selected.id_karyawan],['Nama',selected.nama],['Tempat Lahir',selected.tempat_lahir],['Tanggal Lahir',selected.tanggal_lahir],['Jenis Kelamin',selected.jenis_kelamin],['Alamat Rumah',selected.alamat_rumah],['No. Telepon',selected.no_telp],['Email',selected.email],['Status Pernikahan',selected.status_pernikahan],['Nama Ibu Kandung',selected.nama_ibu_kandung],['Departemen',selected.departemen],['Jabatan',selected.jabatan],['Status Karyawan',selected.status_karyawan],['Tanggal Masuk',selected.tanggal_masuk],['Gaji Pokok',selected.gaji_pokok!=null?money(Number(selected.gaji_pokok)):null],['Nama Bank',selected.bank_name],['Nomor Rekening',selected.bank_account]
+        ].map(([label,value])=><div className="detail-item" key={label}><span>{label}</span><b>{value||'—'}</b></div>)}</div>
+      </div>
+      <div className="export-foot"><button className="secondary" disabled={busy} onClick={()=>setSelected(null)}>Tutup</button><button className="danger-text" disabled={busy} onClick={()=>decide('Tolak')}>Tolak</button><button className="primary" disabled={busy} onClick={()=>decide('Terima')}>{busy?'Memproses…':'Terima'}</button></div>
+    </div></div>}
+  </>;
+}
+
 function AddEmployee({onDone,refresh}:{onDone:()=>void;refresh:()=>void}) {
   const { t } = useTranslation();
   const [f,setF]=useState({
@@ -1636,142 +1954,6 @@ function EmployeeEditor({ employee, onClose, onSave }: { employee: Karyawan; onC
   );
 }
 function Branch({title,desc,items,tab,setTab,action,onAction,children}:{title:string;desc:string;items:{key:string;label:string;icon:string}[];tab:string;setTab:(v:string)=>void;action?:string;onAction?:()=>void;children:ReactNode}){return <><Heading title={title} desc={desc} action={action} onAction={onAction}/><div className="branch-nav">{items.map(i=><button key={i.key} className={tab===i.key?'active':''} onClick={()=>setTab(i.key)}><span>{i.icon}</span>{i.label}</button>)}</div>{children}</>}
-function AttendanceModule({type,data,onRefresh,onExport}:{type:MenuKey;data:Absensi[];onRefresh:()=>void;onExport:()=>void}){const {t}=useTranslation();
- const initial=type==='attendance-today'?'today':type==='late'?'late':type==='leave'?'leave':type==='overtime'?'overtime':type==='selfie'?'selfie':type==='gps'?'gps':'summary';
- const [tab,setTab]=useState(initial),[open,setOpen]=useState(false),[employees,setEmployees]=useState<Karyawan[]>([]);
- const [f,setF]=useState({id_karyawan:'',tanggal:isoToday(),jam_masuk:'07:00',jam_pulang:'16:00',status:'Hadir',lokasi:'Manual HR',keterangan:''});
- useEffect(()=>{supabase.from('karyawan').select('*').order('nama').then(({data})=>setEmployees(data||[]))},[]);
- const items=[['summary',t('attendance_summary'),'clock'],['today',t('attendance_today'),'check'],['late',t('late'),'alert'],['leave',`${t('leave')} & ${t('sick')}`,'leave'],['overtime',t('overtime'),'arrow'],['selfie',t('selfie_monitoring'),'camera'],['gps','GPS','location']].map(([key,label,icon])=>({key,label,icon}));
-
- let rows=data;
- if(tab==='today')rows=data.filter(a=>a.tanggal===isoToday());
- if(tab==='late')rows=data.filter(a=>Number(a.keterlambatan_menit||0)>0||(a.status||'').toLowerCase().includes('terlambat'));
- if(tab==='leave')rows=data.filter(a=>/izin|sakit/i.test(a.status||''));
- if(tab==='overtime')rows=data.filter(a=>Number(a.lembur_menit||0)>0);
- if(tab==='selfie')rows=data.filter(a=>!!a.foto||!!a.selfie_masuk);
- if(tab==='gps')rows=data.filter(a=>
-   (a.latitude!=null&&a.longitude!=null)||
-   (a.latitude_masuk!=null&&a.longitude_masuk!=null)
- );
- const save=async(e:FormEvent)=>{e.preventDefault();const emp=employees.find(x=>x.id_karyawan===f.id_karyawan);if(!emp){await appAlert(t('select_employee'));return;}const {error}=await supabase.from('absensi').insert({...f,nama:emp.nama,jabatan:emp.jabatan||'',total_jam: f.jam_masuk && f.jam_pulang ? (()=>{ const [ih,im]=String(f.jam_masuk).split(':').map(Number); const [oh,om]=String(f.jam_pulang).split(':').map(Number); let mins=(oh*60+om)-(ih*60+im); if(mins<0) mins+=1440; return `${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`; })() : ''});if(error)await appAlert(error.message);else{setOpen(false);onRefresh()}};
- const del=async(id:string)=>{if(await appConfirm(t('delete_attendance_confirm'))){const {error}=await supabase.from('absensi').delete().eq('id',id);if(error)await appAlert(error.message);else onRefresh()}};
- return <Branch title={t('attendance')} desc={t('attendance_desc')} items={items} tab={tab} setTab={setTab} action={tab==='summary'?t('input_attendance'):t('export_csv')} onAction={tab==='summary'?()=>setOpen(true):onExport}>
-  <div className="stat-grid three"><Stat title={t('attendance_data')} value={String(rows.length)} hint={t('data_displayed')} icon="calendar"/><Stat title={t('present')} value={String(rows.filter(a=>/hadir|tepat|terlambat/i.test(a.status||'')).length)} hint={t('attendance')} icon="check"/><Stat title={t('needs_review')} value={String(rows.filter(a=>Number(a.lembur_menit||0)>0||Number(a.keterlambatan_menit||0)>0).length)} hint={t('overtime_late')} icon="alert"/></div>
-  {tab==='gps' ? (
-    <div className="panel table-panel">
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>{t('employee')}</th>
-              <th>{t('date')}</th>
-              <th>{t('check_in')}</th>
-              <th>{t('check_out')}</th>
-              <th>{t('latitude')}</th>
-              <th>{t('longitude')}</th>
-              <th>{t('accuracy')}</th>
-              <th>{t('status')}</th>
-              <th>{t('maps')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length ? rows.map((a,i)=>{
-              const lat=a.latitude ?? a.latitude_masuk;
-              const lng=a.longitude ?? a.longitude_masuk;
-              const acc=a.akurasi_masuk ?? a.akurasi_pulang ?? a.accuracy;
-              const hasGps=lat!=null&&lng!=null;
-              const mapsUrl=hasGps
-                ? `https://www.google.com/maps?q=${encodeURIComponent(String(lat)+','+String(lng))}`
-                : '';
-
-              return (
-                <tr key={a.id||i}>
-                  <td>
-                    <b>{a.nama||'-'}</b>
-                    <small>{a.id_karyawan||''}</small>
-                  </td>
-                  <td>{a.tanggal||'-'}</td>
-                  <td>{a.jam_masuk||'-'}</td>
-                  <td>{a.jam_pulang||'-'}</td>
-                  <td>{lat!=null?String(lat):'-'}</td>
-                  <td>{lng!=null?String(lng):'-'}</td>
-                  <td>{acc!=null?`±${Math.round(Number(acc))} m`:'-'}</td>
-                  <td><Status value={a.status||'GPS Tersimpan'}/></td>
-                  <td>
-                    {hasGps ? (
-                      <a
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="link-btn"
-                      >
-                        Buka Maps
-                      </a>
-                    ) : '-'}
-                  </td>
-                </tr>
-              );
-            }) : <Empty cols={9}/>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  ) : (
-    <div className="panel table-panel">
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>{t('photo')}</th>
-              <th>{t('employee')}</th>
-              <th>{t('date')}</th>
-              <th>{t('check_in')}</th>
-              <th>{t('check_out')}</th>
-              <th>{t('total')}</th>
-              <th>{t('status')}</th>
-              <th>{t('location')}</th>
-              <th>{t('actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length ? rows.map((a,i)=>(
-              <tr key={a.id||i}>
-                <td>
-                  {a.foto||a.selfie_masuk
-                    ? <img className="selfie" src={a.foto||a.selfie_masuk}/>
-                    : <div className="selfie blank">—</div>}
-                </td>
-                <td>
-                  <b>{a.nama||'-'}</b>
-                  <small>{a.id_karyawan||''}</small>
-                </td>
-                <td>{a.tanggal||'-'}</td>
-                <td>{a.jam_masuk||'-'}</td>
-                <td>{a.jam_pulang||'-'}</td>
-                <td>{a.total_jam||'-'}</td>
-                <td><Status value={a.status||'-'}/></td>
-                <td>{a.lokasi||a.lokasi_masuk||'-'}</td>
-                <td>
-                  {a.id !== undefined && (
-                    <button
-                      className="danger-text"
-                      onClick={() => del(String(a.id))}
-                    >
-                      Hapus
-                    </button>
-                  )}
-                </td>
-              </tr>
-            )) : <Empty cols={9}/>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )}
-
-  {open&&<SimpleModal title={t('manual_attendance_input')} onClose={()=>setOpen(false)} onSave={save}><label>{t('employee')}<select required value={f.id_karyawan} onChange={e=>setF({...f,id_karyawan:e.target.value})}><option value="">{t('select_employee')}</option>{employees.map(k=><option key={k.id_karyawan} value={k.id_karyawan}>{k.nama} — {k.id_karyawan}</option>)}</select></label><label>{t('date')}<input type="date" value={f.tanggal} onChange={e=>setF({...f,tanggal:e.target.value})}/></label><label>{t('check_in')}<input type="time" value={f.jam_masuk} onChange={e=>setF({...f,jam_masuk:e.target.value})}/></label><label>{t('check_out')}<input type="time" value={f.jam_pulang} onChange={e=>setF({...f,jam_pulang:e.target.value})}/></label><label>{t('status')}<select value={f.status} onChange={e=>setF({...f,status:e.target.value})}><option>Hadir</option><option>Terlambat</option><option>Izin</option><option>Sakit</option><option>Alpa</option></select></label><label>{t('location')}<input value={f.lokasi} onChange={e=>setF({...f,lokasi:e.target.value})}/></label><label>{t('notes')}<textarea value={f.keterangan} onChange={e=>setF({...f,keterangan:e.target.value})}/></label></SimpleModal>}
- </Branch>
-}
 
 function HolidayModule(){const {t}=useTranslation();
  const [rows,setRows]=useState<any[]>([]),[modal,setModal]=useState(false),[f,setF]=useState({tanggal:isoToday(),nama:'',tipe:'Nasional'}),[msg,setMsg]=useState('');

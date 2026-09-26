@@ -12,8 +12,6 @@ android/capacitor-cordova-android-plugins/build/
 
 # Local Netlify folder
 .netlify
-<<<<<<< HEAD
-=======
 
 # Local backup files
 *.bak-*
@@ -22,4 +20,3 @@ android/capacitor-cordova-android-plugins/build/
 # Local backup files
 *.bak-*
 *.backup-*
->>>>>>> 7dad298 (feat: update HRIS web and public recruitment portal)
